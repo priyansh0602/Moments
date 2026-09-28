@@ -1,0 +1,69 @@
+# Operating Systems
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# Environment files
+.env
+.env.*
+!.env.example
+!**/.env.example
+*.env.local
+
+# Node / Next.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.next/
+out/
+build/
+dist/
+.vercel
+
+# Flutter & Dart
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+app/build/
+app/.dart_tool/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/.packages
+app/.pub-cache/
+app/.pub/
+app/ios/Pods/
+app/ios/.symlinks/
+app/ios/Flutter/Flutter.framework
+app/ios/Flutter/Flutter.podspec
+app/ios/Flutter/Generated.xcconfig
+app/ios/Flutter/app.framework
+app/android/local.properties
+app/android/.gradle/
+app/android/captures/
+app/android/app/release/
+app/android/app/debug/
+app/android/app/profile/
+app/**/generated/**
+*.lockfile
+
+# Supabase
+supabase/.branches/
+supabase/.temp/
+.supabase/

@@ -1,0 +1,2 @@
+-- Seed data for Moments development environment
+-- Tables and initial seed data will be added in Phase 2
