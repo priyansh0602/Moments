@@ -3,21 +3,123 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:moments/core/router/app_routes.dart';
 import 'package:moments/core/widgets/app_shell.dart';
+import 'package:moments/features/auth/presentation/forgot_password_screen.dart';
+import 'package:moments/features/auth/presentation/onboarding_username_screen.dart';
+import 'package:moments/features/auth/presentation/providers/auth_status_provider.dart';
+import 'package:moments/features/auth/presentation/sign_in_screen.dart';
+import 'package:moments/features/auth/presentation/sign_up_screen.dart';
+import 'package:moments/features/auth/presentation/splash_screen.dart';
 import 'package:moments/features/groups/presentation/groups_screen.dart';
 import 'package:moments/features/moments/presentation/your_moments_screen.dart';
 import 'package:moments/features/player/presentation/full_player_screen.dart';
+import 'package:moments/features/profile/presentation/edit_profile_screen.dart';
 import 'package:moments/features/profile/presentation/profile_screen.dart';
 import 'package:moments/features/search/presentation/search_screen.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'root');
 
-/// Riverpod provider configuring the application GoRouter with stateful tab preservation.
+/// Riverpod provider configuring the application GoRouter with auth gating and tab preservation.
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final authNotifier = ref.watch(authStatusNotifierProvider);
+
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: AppRoutes.search,
+    initialLocation: AppRoutes.splash,
+    refreshListenable: authNotifier,
+    redirect: (context, state) {
+      final authState = ref.read(authStatusProvider);
+      final location = state.matchedLocation;
+
+      final isAuthRoute = location == AppRoutes.signIn ||
+          location == AppRoutes.signUp ||
+          location == AppRoutes.forgotPassword;
+      final isSplash = location == AppRoutes.splash;
+      final isOnboarding = location == AppRoutes.onboardingUsername;
+
+      // 1. Session is resolving on app boot
+      if (authState.isLoading) {
+        return isSplash ? null : AppRoutes.splash;
+      }
+
+      // 2. Unauthenticated user
+      if (authState.isUnauthenticated) {
+        if (isAuthRoute) return null;
+        return AppRoutes.signIn;
+      }
+
+      // 3. User authenticated but requires username setup
+      if (authState.needsOnboarding) {
+        if (isOnboarding) return null;
+        return AppRoutes.onboardingUsername;
+      }
+
+      // 4. Authenticated & fully onboarded
+      if (authState.isAuthenticated) {
+        if (isAuthRoute || isSplash || isOnboarding) {
+          return AppRoutes.search;
+        }
+      }
+
+      return null;
+    },
     routes: [
+      // Splash / Session Resolution Screen
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.splash,
+        name: 'splash',
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: SplashScreen(),
+        ),
+      ),
+
+      // Auth Routes
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.signIn,
+        name: 'sign-in',
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: SignInScreen(),
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.signUp,
+        name: 'sign-up',
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: SignUpScreen(),
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.forgotPassword,
+        name: 'forgot-password',
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: ForgotPasswordScreen(),
+        ),
+      ),
+
+      // Onboarding Route
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.onboardingUsername,
+        name: 'onboarding-username',
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: OnboardingUsernameScreen(),
+        ),
+      ),
+
+      // Edit Profile Route
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.editProfile,
+        name: 'edit-profile',
+        pageBuilder: (context, state) => const MaterialPage(
+          child: EditProfileScreen(),
+        ),
+      ),
+
       // Stateful shell branch route preserving state across all 4 bottom tabs
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
