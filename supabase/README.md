@@ -52,19 +52,32 @@ When running locally:
 - **API URL**: `http://localhost:54321`
 
 ### Database Migrations (Phase 2+)
-Database schema changes are stored as sequential SQL migrations in `supabase/migrations/`:
-- Create new migration:
+Database schema changes are stored as sequential timestamped SQL migrations in `supabase/migrations/`:
+- **Create new migration**:
   ```bash
   supabase migration new <migration_name>
   ```
-- Apply migrations locally:
-  ```bash
-  supabase db reset
-  ```
-- Push migrations to linked remote project:
+- **Apply migrations to linked remote project**:
   ```bash
   supabase db push
   ```
+- **Apply migrations sequentially**:
+  ```bash
+  supabase migration up
+  ```
+- **Apply via Supabase Dashboard SQL Editor**:
+  You can run the migration files sequentially in the [Supabase SQL Editor](https://supabase.com/dashboard/project/syrzrwbbmpenqurkcaon/sql/new).
+
+### Generating Dart Client Types for Flutter (Phase 3+)
+Generate strongly-typed Dart data models matching your live Postgres schema:
+```bash
+# Generate types from linked remote Supabase project
+supabase gen types dart --linked > app/lib/core/data/schema.dart
+
+# Or generate types directly using project reference
+supabase gen types dart --project-id syrzrwbbmpenqurkcaon --schema public > app/lib/core/data/schema.dart
+```
+*(We will consume and bind these generated types in Phase 3 repositories).*
 
 ### Edge Functions (Phase 4+)
 Serverless TypeScript functions that run on Deno:
