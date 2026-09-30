@@ -1,12 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 abstract final class Env {
   /// Loads environment variables from the `.env` asset file.
-  static Future<void> init() async {
+  static Future<void> init({String fileName = '.env'}) async {
     try {
-      await dotenv.load(fileName: '.env');
-    } catch (_) {
-      // Allow fallback if .env is missing during tests or initial setup
+      await dotenv.load(fileName: fileName);
+    } catch (e, st) {
+      debugPrint('Warning: Could not load $fileName file: $e\n$st');
     }
   }
 
@@ -19,7 +20,7 @@ abstract final class Env {
         'Missing SUPABASE_URL. Please configure it in app/.env',
       );
     }
-    return value;
+    return value.trim();
   }
 
   /// Supabase public anonymous API key.
@@ -31,19 +32,24 @@ abstract final class Env {
         'Missing SUPABASE_ANON_KEY. Please configure it in app/.env',
       );
     }
-    return value;
+    return value.trim();
   }
 
   /// Checks whether real, non-placeholder credentials have been supplied.
   static bool get isSupabaseConfigured {
-    final url = dotenv.maybeGet('SUPABASE_URL');
-    final key = dotenv.maybeGet('SUPABASE_ANON_KEY');
+    final rawUrl = dotenv.maybeGet('SUPABASE_URL');
+    final rawKey = dotenv.maybeGet('SUPABASE_ANON_KEY');
 
-    if (url == null || key == null) return false;
-    if (url.trim().isEmpty || key.trim().isEmpty) return false;
+    if (rawUrl == null || rawKey == null) return false;
+    final url = rawUrl.trim();
+    final key = rawKey.trim();
+
+    if (url.isEmpty || key.isEmpty) return false;
     if (url.contains('your-project') || key.contains('your-anon-key')) {
       return false;
     }
-    return Uri.tryParse(url)?.hasAbsolutePath ?? false;
+
+    final uri = Uri.tryParse(url);
+    return uri != null && uri.hasScheme && uri.host.isNotEmpty;
   }
 }

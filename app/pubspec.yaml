@@ -41,6 +41,7 @@ dependencies:
   json_annotation: ^4.9.0
   equatable: ^3.0.0
   google_fonts: ^6.2.1
+  app_links: ^6.4.1
 
 dev_dependencies:
   flutter_test:

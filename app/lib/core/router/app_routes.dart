@@ -3,10 +3,8 @@ abstract class AppRoutes {
   /// Startup splash screen while checking session.
   static const String splash = '/splash';
 
-  /// Authentication screens.
+  /// Authentication screen (Google OAuth).
   static const String signIn = '/sign-in';
-  static const String signUp = '/sign-up';
-  static const String forgotPassword = '/forgot-password';
 
   /// New user handle onboarding screen.
   static const String onboardingUsername = '/onboarding/username';

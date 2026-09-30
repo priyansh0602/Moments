@@ -1,14 +1,17 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moments/app.dart';
 import 'package:moments/core/widgets/empty_state.dart';
+import 'package:moments/core/widgets/loading_indicator.dart';
 import 'package:moments/core/widgets/moments_bottom_nav.dart';
-import 'package:moments/features/auth/presentation/forgot_password_screen.dart';
+import 'package:moments/core/widgets/secondary_button.dart';
+import 'package:moments/core/widgets/supabase_init_error_app.dart';
+import 'package:moments/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:moments/features/auth/presentation/onboarding_username_screen.dart';
 import 'package:moments/features/auth/presentation/providers/auth_status_provider.dart';
 import 'package:moments/features/auth/presentation/sign_in_screen.dart';
-import 'package:moments/features/auth/presentation/sign_up_screen.dart';
 import 'package:moments/features/groups/presentation/groups_screen.dart';
 import 'package:moments/features/moments/presentation/your_moments_screen.dart';
 import 'package:moments/features/player/presentation/full_player_screen.dart';
@@ -27,6 +30,13 @@ class _FakeProfileNotifier extends CurrentUserProfileNotifier {
       displayName: 'Priyansh',
       momentsCount: 47,
     );
+  }
+}
+
+class _FakeLoadingAuthController extends AuthController {
+  @override
+  Future<void> build() async {
+    await Completer<void>().future;
   }
 }
 
@@ -49,8 +59,8 @@ Widget _buildAuthenticatedApp() {
 }
 
 void main() {
-  group('Phase 3 Auth & Route Guarding Tests', () {
-    testWidgets('Unauthenticated user is redirected to SignInScreen', (
+  group('Phase 3 Google-Only Auth & Route Guarding Tests', () {
+    testWidgets('Unauthenticated user is redirected to SignInScreen with Google-only CTA', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -66,9 +76,33 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(SignInScreen), findsOneWidget);
-      expect(find.text('Welcome Back'), findsOneWidget);
-      expect(find.text('Sign In'), findsOneWidget);
+      expect(find.text('Moments'), findsWidgets);
       expect(find.text('Continue with Google'), findsOneWidget);
+      // Confirm no email/password form fields exist
+      expect(find.byType(TextFormField), findsNothing);
+    });
+
+    testWidgets('SignInScreen displays continuous LoadingIndicator when auth is in progress', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authStatusProvider.overrideWithValue(
+              const AuthStatusState(status: AppAuthStatus.unauthenticated),
+            ),
+            authControllerProvider.overrideWith(
+              () => _FakeLoadingAuthController(),
+            ),
+          ],
+          child: const MomentsApp(),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(LoadingIndicator), findsOneWidget);
+      expect(find.text('Signing in with Google...'), findsOneWidget);
+      expect(find.byType(SecondaryButton), findsNothing);
     });
 
     testWidgets('User needing onboarding is redirected to OnboardingUsernameScreen', (
@@ -93,39 +127,6 @@ void main() {
       expect(find.byType(OnboardingUsernameScreen), findsOneWidget);
       expect(find.text('Pick Your Handle'), findsOneWidget);
       expect(find.text('Complete Setup'), findsOneWidget);
-    });
-
-    testWidgets('Can navigate from Sign In to Sign Up and Forgot Password screens', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            authStatusProvider.overrideWithValue(
-              const AuthStatusState(status: AppAuthStatus.unauthenticated),
-            ),
-          ],
-          child: const MomentsApp(),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Tap Sign Up link
-      await tester.tap(find.text('Sign Up'));
-      await tester.pumpAndSettle();
-      expect(find.byType(SignUpScreen), findsOneWidget);
-      expect(find.text('Create Account'), findsWidgets);
-
-      // Go back to Sign In
-      await tester.tap(find.text('Sign In'));
-      await tester.pumpAndSettle();
-      expect(find.byType(SignInScreen), findsOneWidget);
-
-      // Tap Forgot Password
-      await tester.tap(find.text('Forgot password?'));
-      await tester.pumpAndSettle();
-      expect(find.byType(ForgotPasswordScreen), findsOneWidget);
-      expect(find.text('Reset Password'), findsOneWidget);
     });
 
     test('UserProfile isPlaceholderUsername correctly identifies placeholder handles', () {
@@ -344,6 +345,29 @@ void main() {
       expect(lightScaffold, isNotNull);
 
       tester.platformDispatcher.clearPlatformBrightnessTestValue();
+    });
+  });
+
+  group('Defensive Supabase Error Screen Tests', () {
+    testWidgets('Renders error details and retry button without Riverpod crash', (
+      WidgetTester tester,
+    ) async {
+      var retryClicked = false;
+      await tester.pumpWidget(
+        SupabaseInitErrorApp(
+          errorMessage: 'Missing SUPABASE_URL',
+          onRetry: () => retryClicked = true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Connection Error'), findsOneWidget);
+      expect(find.text('Retry Connection'), findsOneWidget);
+      expect(find.text('Missing SUPABASE_URL'), findsOneWidget);
+
+      await tester.tap(find.text('Retry Connection'));
+      await tester.pump();
+      expect(retryClicked, isTrue);
     });
   });
 }

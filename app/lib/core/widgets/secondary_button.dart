@@ -8,6 +8,7 @@ class SecondaryButton extends StatelessWidget {
     required this.onPressed,
     super.key,
     this.icon,
+    this.isLoading = false,
     this.isFullWidth = false,
   });
 
@@ -20,6 +21,9 @@ class SecondaryButton extends StatelessWidget {
   /// Optional leading icon.
   final IconData? icon;
 
+  /// Whether a loading spinner should replace the icon/text.
+  final bool isLoading;
+
   /// Whether the button should stretch to full parent width.
   final bool isFullWidth;
 
@@ -27,34 +31,45 @@ class SecondaryButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    final buttonContent = Row(
-      mainAxisSize: isFullWidth ? MainAxisSize.max : MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (icon != null) ...[
-          Icon(icon, size: 18, color: theme.colorScheme.onSurface),
-          const SizedBox(width: 8),
-        ],
-        Text(
-          label,
-          style: TextStyle(
-            color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-            letterSpacing: 0.1,
-          ),
-        ),
-      ],
-    );
+    final buttonContent = isLoading
+        ? SizedBox(
+            height: 20,
+            width: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.2,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                theme.colorScheme.onSurface,
+              ),
+            ),
+          )
+        : Row(
+            mainAxisSize: isFullWidth ? MainAxisSize.max : MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 20, color: theme.colorScheme.onSurface),
+                const SizedBox(width: 10),
+              ],
+              Text(
+                label,
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  letterSpacing: 0.1,
+                ),
+              ),
+            ],
+          );
 
     final button = OutlinedButton(
-      onPressed: onPressed,
+      onPressed: isLoading ? null : onPressed,
       style: OutlinedButton.styleFrom(
         side: BorderSide(
           color: theme.colorScheme.outline,
           width: 1.2,
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(28),
         ),

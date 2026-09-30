@@ -6,63 +6,58 @@ import 'package:moments/features/profile/presentation/providers/profile_provider
 final authControllerProvider =
     AsyncNotifierProvider<AuthController, void>(AuthController.new);
 
-/// Controller managing async UI states (loading, errors, success) for auth forms.
+/// Controller managing async UI states (loading, errors, success) for Google OAuth.
 class AuthController extends AsyncNotifier<void> {
+  bool _isOAuthInProgress = false;
+
+  /// Whether an OAuth browser flow is currently awaiting user action or redirect.
+  bool get isOAuthInProgress => _isOAuthInProgress;
+
   @override
   Future<void> build() async {
     // Initial state is idle (AsyncData(null))
   }
 
-  /// Sign in with email and password.
-  Future<bool> signInWithEmail({
-    required String email,
-    required String password,
-  }) async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
-      await ref.read(authRepositoryProvider).signInWithEmail(
-            email: email,
-            password: password,
-          );
-      // Invalidate profile so fresh data is loaded
-      ref.invalidate(currentUserProfileProvider);
-    });
-    return !state.hasError;
-  }
-
-  /// Register a new account with email and password.
-  Future<bool> signUpWithEmail({
-    required String email,
-    required String password,
-  }) async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
-      await ref.read(authRepositoryProvider).signUpWithEmail(
-            email: email,
-            password: password,
-          );
-      ref.invalidate(currentUserProfileProvider);
-    });
-    return !state.hasError;
-  }
-
   /// Trigger Supabase Google OAuth sign-in flow.
   Future<bool> signInWithGoogle() async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
-      await ref.read(authRepositoryProvider).signInWithGoogle();
-      ref.invalidate(currentUserProfileProvider);
-    });
-    return !state.hasError;
+    _isOAuthInProgress = true;
+    try {
+      final launched =
+          await ref.read(authRepositoryProvider).signInWithGoogle();
+      if (!launched) {
+        _isOAuthInProgress = false;
+        state = const AsyncData(null);
+        return false;
+      }
+      // Note: Keep state in AsyncLoading until callback completes or user cancels.
+      return true;
+    } catch (e, st) {
+      _isOAuthInProgress = false;
+      state = AsyncError(e, st);
+      return false;
+    }
   }
 
-  /// Request a password reset link.
-  Future<bool> resetPassword(String email) async {
+  /// Called by DeepLinkService when an OAuth callback URI is detected.
+  void onCallbackReceived() {
+    _isOAuthInProgress = false;
+    // Keep loading active while exchanging session and fetching profile
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
-      await ref.read(authRepositoryProvider).resetPassword(email);
-    });
-    return !state.hasError;
+  }
+
+  /// Called if deep-link token exchange fails.
+  void setError(String errorMessage) {
+    _isOAuthInProgress = false;
+    state = AsyncError(Exception(errorMessage), StackTrace.current);
+  }
+
+  /// Called when the user returns to the app without completing OAuth (cancelled).
+  void cancelSignIn() {
+    if (_isOAuthInProgress) {
+      _isOAuthInProgress = false;
+      state = const AsyncData(null);
+    }
   }
 
   /// Terminate session and sign out.

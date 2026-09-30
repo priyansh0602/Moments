@@ -26,7 +26,7 @@ class ProfileRepository {
 
       if (data == null) return null;
       return UserProfile.fromJson(data);
-    } catch (e) {
+    } catch (_) {
       return null;
     }
   }
@@ -77,8 +77,10 @@ class ProfileRepository {
 
     final response = await _client
         .from('profiles')
-        .update(updates)
-        .eq('id', id)
+        .upsert({
+          'id': id,
+          ...updates,
+        })
         .select()
         .single();
 

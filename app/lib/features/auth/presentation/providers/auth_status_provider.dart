@@ -39,13 +39,16 @@ class AuthStatusState {
 /// Listenable that notifies GoRouter when auth status or onboarding changes.
 class AuthStatusNotifier extends ChangeNotifier {
   AuthStatusNotifier(this._ref) {
-    _ref.listen<AsyncValue<dynamic>>(
-      authStateChangesProvider,
-      (previous, next) => notifyListeners(),
-    );
-    _ref.listen<AsyncValue<dynamic>>(
-      currentUserProfileProvider,
-      (previous, next) => notifyListeners(),
+    _ref.listen<AuthStatusState>(
+      authStatusProvider,
+      (previous, next) {
+        debugPrint(
+          '[AuthStatusNotifier] Transition: '
+          '${previous?.status} -> ${next.status} '
+          '(User: ${next.userId}, Username: ${next.username})',
+        );
+        notifyListeners();
+      },
     );
   }
 
@@ -58,17 +61,27 @@ final authStatusNotifierProvider = Provider<AuthStatusNotifier>((ref) {
 
 /// Computes the current [AuthStatusState] reactively.
 final authStatusProvider = Provider<AuthStatusState>((ref) {
+  final authStateAsync = ref.watch(authStateChangesProvider);
+
+  // 1. Session is resolving on initial boot or during OAuth state transitions
+  if (authStateAsync.isLoading) {
+    debugPrint('[AuthStatusProvider] Auth state stream is loading...');
+    return const AuthStatusState(status: AppAuthStatus.loading);
+  }
+
   final currentUser = ref.watch(currentAuthUserProvider);
 
-  // 1. Not authenticated -> direct to sign-in
+  // 2. Not authenticated -> direct to sign-in
   if (currentUser == null) {
+    debugPrint('[AuthStatusProvider] No authenticated user -> unauthenticated');
     return const AuthStatusState(status: AppAuthStatus.unauthenticated);
   }
 
-  // 2. User is authenticated, check their profile status
+  // 3. User is authenticated, check their profile status
   final profileAsync = ref.watch(currentUserProfileProvider);
 
   if (profileAsync.isLoading) {
+    debugPrint('[AuthStatusProvider] User ${currentUser.id} authenticated, loading profile...');
     return AuthStatusState(
       status: AppAuthStatus.loading,
       userId: currentUser.id,
@@ -77,8 +90,12 @@ final authStatusProvider = Provider<AuthStatusState>((ref) {
 
   final profile = profileAsync.value;
 
-  // 3. User authenticated but requires real username
+  // 4. User authenticated but requires real username
   if (profile == null || profile.isPlaceholderUsername) {
+    debugPrint(
+      '[AuthStatusProvider] User ${currentUser.id} needs onboarding '
+      '(username: ${profile?.username})',
+    );
     return AuthStatusState(
       status: AppAuthStatus.needsOnboarding,
       userId: currentUser.id,
@@ -86,7 +103,11 @@ final authStatusProvider = Provider<AuthStatusState>((ref) {
     );
   }
 
-  // 4. Authenticated & fully onboarded
+  // 5. Authenticated & fully onboarded
+  debugPrint(
+    '[AuthStatusProvider] User ${currentUser.id} fully onboarded '
+    '(${profile.username})',
+  );
   return AuthStatusState(
     status: AppAuthStatus.authenticated,
     userId: currentUser.id,

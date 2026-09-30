@@ -3,11 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:moments/core/router/app_routes.dart';
 import 'package:moments/core/widgets/app_shell.dart';
-import 'package:moments/features/auth/presentation/forgot_password_screen.dart';
 import 'package:moments/features/auth/presentation/onboarding_username_screen.dart';
 import 'package:moments/features/auth/presentation/providers/auth_status_provider.dart';
 import 'package:moments/features/auth/presentation/sign_in_screen.dart';
-import 'package:moments/features/auth/presentation/sign_up_screen.dart';
 import 'package:moments/features/auth/presentation/splash_screen.dart';
 import 'package:moments/features/groups/presentation/groups_screen.dart';
 import 'package:moments/features/moments/presentation/your_moments_screen.dart';
@@ -31,15 +29,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final authState = ref.read(authStatusProvider);
       final location = state.matchedLocation;
 
-      final isAuthRoute = location == AppRoutes.signIn ||
-          location == AppRoutes.signUp ||
-          location == AppRoutes.forgotPassword;
+      final isAuthRoute = location == AppRoutes.signIn;
       final isSplash = location == AppRoutes.splash;
       final isOnboarding = location == AppRoutes.onboardingUsername;
 
-      // 1. Session is resolving on app boot
+      debugPrint(
+        '[GoRouter redirect] location: "$location", '
+        'status: ${authState.status}, '
+        'user: ${authState.userId}',
+      );
+
+      // 1. Session is resolving on app boot or during post-OAuth profile fetch
       if (authState.isLoading) {
-        return isSplash ? null : AppRoutes.splash;
+        if (isSplash || isAuthRoute) return null;
+        return AppRoutes.splash;
       }
 
       // 2. Unauthenticated user
@@ -74,29 +77,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
-      // Auth Routes
+      // Auth Route (Google OAuth)
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.signIn,
         name: 'sign-in',
         pageBuilder: (context, state) => const NoTransitionPage(
           child: SignInScreen(),
-        ),
-      ),
-      GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
-        path: AppRoutes.signUp,
-        name: 'sign-up',
-        pageBuilder: (context, state) => const NoTransitionPage(
-          child: SignUpScreen(),
-        ),
-      ),
-      GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
-        path: AppRoutes.forgotPassword,
-        name: 'forgot-password',
-        pageBuilder: (context, state) => const NoTransitionPage(
-          child: ForgotPasswordScreen(),
         ),
       ),
 
