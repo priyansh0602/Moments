@@ -42,6 +42,8 @@ dependencies:
   equatable: ^3.0.0
   google_fonts: ^6.2.1
   app_links: ^6.4.1
+  youtube_player_iframe: ^6.0.2
+  audio_service: ^0.18.19
 
 dev_dependencies:
   flutter_test:

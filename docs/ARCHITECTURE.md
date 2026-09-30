@@ -155,3 +155,35 @@ To protect third-party credentials, the mobile client never communicates with Yo
 - `search_rate_limit` tracks rolling 60-second windows per `auth.uid()`, capping queries at **15 searches per minute**.
 - Exceeded thresholds immediately reject with HTTP 429 (`Too Many Requests`), halting upstream quota burns.
 
+---
+
+## 7. Playback Engine Architecture (Phase 5)
+
+### 7.1 Single Persistent PlatformView Pattern (`PersistentPlayerHost`)
+- **YouTube Terms of Service Compliance**:
+  YouTube ToS mandates that playback must occur within official IFrame players and remain visibly rendered on screen at all times (no audio extraction or hidden background execution).
+- **Zero-Teardown WebView Preservation**:
+  In Flutter, WebViews (`PlatformViewLink` / `AndroidView`) instantiate native Android/iOS view hierarchies. Destroying or re-mounting the widget tears down the Chromium web context and stops audio playback.
+- **Top-Level Dynamic Geometry**:
+  `PersistentPlayerHost` wraps the root router tree in `MaterialApp.router`'s `builder`. A single `YoutubePlayer` instance is instantiated once and smoothly animates its geometry via `AnimatedPositioned` between:
+  1. **Mini-player mode**: 46x46 square thumbnail docked at bottom-left inside `MiniPlayerBar` (passes touches through).
+  2. **Full-player mode**: 16:9 widescreen video frame centered at top of `FullPlayerScreen` (interactive gestures enabled).
+  Transitions between mini and full players (and between tabs) preserve identical playback state without reload or stutter.
+
+### 7.2 OS Media Session Proxy Pattern (`audio_service`)
+- WebViews cannot natively broadcast OS media session state to Android MediaNotification or iOS Control Center.
+- `MomentsAudioHandler` (`audio_service`) acts as an external **state proxy / mirror**:
+  - **Single Source of Truth**: The `PlayerController` stream drives all state. The proxy handler listens to playback updates and synchronizes them outward to the OS via `playbackState` and `mediaItem`.
+  - **No Real Audio in Proxy**: `audio_service` plays zero audio itself; it solely mirrors track title, artist, artwork (`artUri`), duration, and playback status into OS notifications.
+  - **Bi-directional Action Forwarding**: Tapping notification play/pause/seek controls calls `MomentsAudioHandler` methods (`play()`, `pause()`, `seek()`), which route directly back into `PlayerController`.
+
+### 7.3 Real Device Backgrounding Behavior Report
+- **Android Platform Behavior**:
+  - The Android system Media Notification is sustained via `foregroundServiceType="mediaPlayback"` with `WAKE_LOCK`. The app process and notification persist reliably without OS task termination.
+  - **Standard Chromium WebView Pausing**: When the user backgrounds the application (e.g. presses Home or switches to another app), Android's WebKit/Chromium engine automatically halts frame rendering and suspends JavaScript execution/timers to conserve battery and CPU. Consequently, YouTube IFrame video and audio playback pauses while backgrounded.
+  - **Instant Resumption**: Track position, video ID, and player state remain fully preserved in memory. Resuming the application or tapping the notification instantly re-activates the player from the exact millisecond without reloading.
+
+### 7.4 iOS Configuration Requirements
+- **Info.plist**: `UIBackgroundModes` with `<string>audio</string>` is configured in `ios/Runner/Info.plist`.
+- **Xcode Manual Setting Note**: On iOS devices, the "Audio, AirPlay, and Picture in Picture" capability must be toggled in Xcode's "Signing & Capabilities" tab for production App Store provisioning profiles.
+

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:moments/app.dart';
 import 'package:moments/core/config/env.dart';
+import 'package:moments/core/services/audio_handler_provider.dart';
 import 'package:moments/core/widgets/supabase_init_error_app.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -10,6 +11,9 @@ Future<void> main() async {
 
   // Load environment configuration
   await Env.init();
+
+  // Initialize OS background audio service proxy
+  await initAudioService();
 
   String? initError;
 

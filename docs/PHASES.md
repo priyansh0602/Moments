@@ -8,18 +8,18 @@
   - Supabase local structure, CLI config, and migration guidelines
   - Architectural documentation and contributor guidelines
 
-- [ ] **Phase 1: App Shell & Design System**
+- [x] **Phase 1: App Shell & Design System**
   - Theme definitions (Light / Dark mode Material 3 palette, typography, shapes)
   - Scaffold, bottom navigation bar, responsive layout shell
   - Reusable core UI components and design tokens
 
-- [ ] **Phase 2: Database & Row Level Security (RLS)**
+- [x] **Phase 2: Database & Row Level Security (RLS)**
   - PostgreSQL tables: `profiles`, `moments`, `groups`, `group_moments`, `sessions`
   - RLS policies ensuring secure multi-tenant access control
   - Indexes and automated triggers (e.g. `updated_at`, profile creation on signup)
   - Supabase seed data for local development
 
-- [ ] **Phase 3: Auth & Profiles**
+- [x] **Phase 3: Auth & Profiles**
   - Supabase Auth integration (email/password, OAuth providers)
   - Auth state management via Riverpod
   - Profile setup and edit flows
@@ -29,9 +29,13 @@
   - Quota-aware 24h caching (`search_cache`) and abuse guard rate limiting (`search_rate_limit`)
   - Flutter search presentation, debounce, pagination, and selected song placeholder route
 
-- [ ] **Phase 5: Song Player**
-  - Visible YouTube IFrame player integration
-  - Interactive playback controls, scrubber, and playback state tracking
+- [x] **Phase 5: Song Player**
+  - Visible YouTube IFrame player integration wrapped in WebView (`youtube_player_iframe`)
+  - Top-level persistent platform host (`PersistentPlayerHost`) with zero widget teardown
+  - Fixed bottom mini-player bar with real-time progress and transport controls
+  - Expanded full-screen player with 16:9 video frame, track metadata, and seek scrubber
+  - Bi-directional OS media session notification proxy via `audio_service`
+  - Seamless tap-to-play from search results
 
 - [ ] **Phase 6: Moment Creator**
   - Dual-handle waveform / timeline range selector for start and end timestamp trimming

@@ -1,42 +1,46 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:moments/features/player/domain/models/mini_player_state.dart';
+import 'package:moments/features/player/presentation/providers/player_provider.dart';
 
-/// Provider for managing mini-player state.
-///
-/// Designed to be a drop-in integration point for Phase 5 real audio services.
+/// Legacy compatibility provider mapping real [playerPlaybackStateProvider] into [MiniPlayerState].
 final miniPlayerProvider =
     NotifierProvider<MiniPlayerNotifier, MiniPlayerState>(
   MiniPlayerNotifier.new,
 );
 
-/// State notifier that manages playback presentation for the mini-player.
+/// State notifier that bridges [playerPlaybackStateProvider] into [MiniPlayerState].
 class MiniPlayerNotifier extends Notifier<MiniPlayerState> {
   @override
   MiniPlayerState build() {
-    return const MiniPlayerState(
-      title: 'After Dark',
-      artist: 'Mr.Kitty',
-      isPlaying: false,
-      progress: 0.35,
-      isVisible: true,
-      currentTimestamp: '01:24',
-      totalDuration: '04:18',
+    final realState = ref.watch(playerPlaybackStateProvider);
+
+    return MiniPlayerState(
+      title: realState.title.isNotEmpty ? realState.title : 'No Song Playing',
+      artist: realState.artist.isNotEmpty ? realState.artist : 'YouTube',
+      thumbnailUrl: realState.thumbnailUrl,
+      isPlaying: realState.isPlaying,
+      progress: realState.progress,
+      isVisible: realState.isVisible,
+      currentTimestamp: realState.formattedPosition,
+      totalDuration: realState.formattedDuration,
     );
   }
 
-  /// Toggles the mock play/pause state.
+  /// Toggles playback on the active YouTube player.
   void togglePlayPause() {
-    state = state.copyWith(isPlaying: !state.isPlaying);
+    ref.read(playerPlaybackStateProvider.notifier).togglePlayPause();
   }
 
-  /// Updates seek/playback progress (0.0 to 1.0).
+  /// Updates seek/playback progress.
   void setProgress(double value) {
-    state = state.copyWith(progress: value.clamp(0.0, 1.0));
+    final realState = ref.read(playerPlaybackStateProvider);
+    final targetSecs = (value * realState.duration.inSeconds).clamp(0.0, realState.duration.inSeconds.toDouble());
+    ref.read(playerPlaybackStateProvider.notifier).seekTo(targetSecs);
   }
 
   /// Sets mini-player visibility across the app shell.
   void setVisibility(bool visible) {
-    state = state.copyWith(isVisible: visible);
+    ref.read(playerPlaybackStateProvider.notifier).setVisibility(visible);
   }
 
   /// Updates currently loaded snippet / track metadata.
@@ -46,13 +50,6 @@ class MiniPlayerNotifier extends Notifier<MiniPlayerState> {
     String? thumbnailUrl,
     String totalDuration = '03:45',
   }) {
-    state = state.copyWith(
-      title: title,
-      artist: artist,
-      thumbnailUrl: thumbnailUrl,
-      totalDuration: totalDuration,
-      progress: 0.0,
-      currentTimestamp: '00:00',
-    );
+    // Kept for backward-compatibility in mock testing
   }
 }

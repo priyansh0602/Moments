@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:moments/core/router/app_routes.dart';
 import 'package:moments/core/theme/app_colors.dart';
 import 'package:moments/core/widgets/empty_state.dart';
 import 'package:moments/core/widgets/loading_indicator.dart';
 import 'package:moments/core/widgets/song_card.dart';
-import 'package:moments/features/player/presentation/providers/mini_player_provider.dart';
+import 'package:moments/features/player/presentation/providers/player_provider.dart';
 import 'package:moments/features/search/presentation/providers/search_provider.dart';
 
 /// Screen for searching songs on YouTube via Supabase Edge Function to extract snippets / Moments.
@@ -293,19 +291,19 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         child: SongCard(
                           song: song,
                           onTap: () {
-                            // Phase 4 requirement: Tapping a SongCard navigates to placeholder SelectedSongScreen
-                            context.push(AppRoutes.songPreview, extra: song);
+                            ref
+                                .read(playerPlaybackStateProvider.notifier)
+                                .playSong(song);
                           },
                           onTrimTap: () {
-                            // Quick trim action: loads into player and notifies user
-                            ref.read(miniPlayerProvider.notifier).loadTrack(
-                                  title: song.title,
-                                  artist: song.artist,
-                                );
+                            // Starts playback and displays feedback for future trim integration
+                            ref
+                                .read(playerPlaybackStateProvider.notifier)
+                                .playSong(song);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  'Trim UI for "${song.title}" (Coming in Phase 6)',
+                                  'Playing "${song.title}" • Moment trimming in Phase 6',
                                 ),
                                 duration: const Duration(seconds: 1),
                               ),

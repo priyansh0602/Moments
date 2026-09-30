@@ -14,8 +14,10 @@ import 'package:moments/features/auth/presentation/providers/auth_status_provide
 import 'package:moments/features/auth/presentation/sign_in_screen.dart';
 import 'package:moments/features/groups/presentation/groups_screen.dart';
 import 'package:moments/features/moments/presentation/your_moments_screen.dart';
+import 'package:moments/features/player/data/fake_player_controller.dart';
 import 'package:moments/features/player/presentation/full_player_screen.dart';
 import 'package:moments/features/player/presentation/mini_player_bar.dart';
+import 'package:moments/features/player/presentation/providers/player_provider.dart';
 import 'package:moments/features/profile/domain/models/user_profile.dart';
 import 'package:moments/features/profile/presentation/edit_profile_screen.dart';
 import 'package:moments/features/profile/presentation/profile_screen.dart';
@@ -41,6 +43,18 @@ class _FakeLoadingAuthController extends AuthController {
   }
 }
 
+class _TestPlayerController extends FakePlayerController {
+  _TestPlayerController() {
+    loadVideo(
+      'demo-123',
+      title: 'After Dark',
+      artist: 'Mr.Kitty',
+      duration: const Duration(seconds: 258),
+    );
+    pause();
+  }
+}
+
 Widget _buildAuthenticatedApp() {
   return ProviderScope(
     overrides: [
@@ -53,6 +67,9 @@ Widget _buildAuthenticatedApp() {
       ),
       currentUserProfileProvider.overrideWith(
         _FakeProfileNotifier.new,
+      ),
+      playerControllerProvider.overrideWith(
+        (ref) => _TestPlayerController(),
       ),
     ],
     child: const MomentsApp(),

@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:moments/core/router/app_routes.dart';
 import 'package:moments/core/theme/app_colors.dart';
-import 'package:moments/features/player/presentation/providers/mini_player_provider.dart';
+import 'package:moments/features/player/presentation/providers/player_provider.dart';
 
 /// Persistent mini-player bar displayed above the bottom navigation bar.
 ///
-/// Reads state from [miniPlayerProvider] and opens the full player route when tapped.
+/// Reads state from [playerPlaybackStateProvider] and opens the full player route when tapped.
 class MiniPlayerBar extends ConsumerWidget {
   /// Creates a [MiniPlayerBar].
   const MiniPlayerBar({super.key});
@@ -17,9 +17,9 @@ class MiniPlayerBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final playerState = ref.watch(miniPlayerProvider);
+    final playerState = ref.watch(playerPlaybackStateProvider);
 
-    if (!playerState.isVisible) {
+    if (!playerState.isVisible || playerState.videoId == null) {
       return const SizedBox.shrink();
     }
 
@@ -66,34 +66,38 @@ class MiniPlayerBar extends ConsumerWidget {
             child: InkWell(
               borderRadius: BorderRadius.circular(16),
               onTap: () {
+                ref.read(playerPlaybackStateProvider.notifier).setExpanded(true);
                 context.push(AppRoutes.player);
               },
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10.0),
                 child: Row(
                   children: [
-                    // Thumbnail box
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              AppColors.primary.withAlpha(200),
-                              AppColors.accentViolet.withAlpha(220),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.music_note_rounded,
-                          color: Colors.white,
-                          size: 22,
-                        ),
+                    // Video slot placeholder (the live YoutubePlayer from PersistentPlayerHost sits directly over this)
+                    Container(
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        color: Colors.black26,
+                        borderRadius: BorderRadius.circular(8),
                       ),
+                      clipBehavior: Clip.antiAlias,
+                      child: playerState.thumbnailUrl != null
+                          ? Image.network(
+                              playerState.thumbnailUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const Icon(
+                                Icons.music_note_rounded,
+                                color: Colors.white70,
+                                size: 24,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.music_note_rounded,
+                              color: Colors.white70,
+                              size: 24,
+                            ),
                     ),
                     const SizedBox(width: 12),
 
@@ -104,7 +108,7 @@ class MiniPlayerBar extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            playerState.title,
+                            playerState.title.isNotEmpty ? playerState.title : 'Loading Track...',
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
@@ -121,13 +125,17 @@ class MiniPlayerBar extends ConsumerWidget {
                                   shape: BoxShape.circle,
                                   color: playerState.isPlaying
                                       ? AppColors.success
-                                      : AppColors.darkTextMuted,
+                                      : (playerState.isBuffering
+                                          ? AppColors.primary
+                                          : AppColors.darkTextMuted),
                                 ),
                               ),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
-                                  '${playerState.artist} • ${playerState.currentTimestamp}',
+                                  playerState.isBuffering
+                                      ? 'Buffering...'
+                                      : '${playerState.artist} • ${playerState.formattedPosition}',
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     fontSize: 11,
                                     color: theme.colorScheme.onSurfaceVariant,
@@ -142,32 +150,18 @@ class MiniPlayerBar extends ConsumerWidget {
                       ),
                     ),
 
-                    // Loop mode indicator
-                    IconButton(
-                      icon: const Icon(Icons.repeat_one_rounded, size: 20),
-                      color: AppColors.primary,
-                      tooltip: 'Loop snippet',
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Loop mode active for current snippet'),
-                            duration: Duration(milliseconds: 900),
-                          ),
-                        );
-                      },
-                    ),
-
                     // Play / Pause toggle button
                     IconButton(
                       icon: Icon(
                         playerState.isPlaying
                             ? Icons.pause_circle_filled_rounded
                             : Icons.play_circle_filled_rounded,
-                        size: 34,
+                        size: 36,
                         color: AppColors.primary,
                       ),
+                      tooltip: playerState.isPlaying ? 'Pause' : 'Play',
                       onPressed: () {
-                        ref.read(miniPlayerProvider.notifier).togglePlayPause();
+                        ref.read(playerPlaybackStateProvider.notifier).togglePlayPause();
                       },
                     ),
                   ],
@@ -194,7 +188,9 @@ class MiniPlayerVisibility extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isVisible = ref.watch(miniPlayerProvider.select((s) => s.isVisible));
+    final isVisible = ref.watch(
+      playerPlaybackStateProvider.select((s) => s.isVisible && s.videoId != null),
+    );
     if (!isVisible) {
       return const SizedBox.shrink();
     }

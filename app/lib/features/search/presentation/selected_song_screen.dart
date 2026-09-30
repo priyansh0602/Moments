@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:moments/core/theme/app_colors.dart';
 import 'package:moments/core/widgets/primary_button.dart';
 import 'package:moments/core/widgets/secondary_button.dart';
-import 'package:moments/features/player/presentation/providers/mini_player_provider.dart';
+import 'package:moments/features/player/presentation/providers/player_provider.dart';
 import 'package:moments/features/search/domain/models/song.dart';
 
 /// Screen displaying a selected YouTube song preview.
@@ -161,13 +161,12 @@ class SelectedSongScreen extends ConsumerWidget {
                 label: 'Load into Player',
                 isFullWidth: true,
                 onPressed: () {
-                  ref.read(miniPlayerProvider.notifier).loadTrack(
-                        title: currentSong.title,
-                        artist: currentSong.artist,
-                      );
+                  ref
+                      .read(playerPlaybackStateProvider.notifier)
+                      .playSong(currentSong);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Loaded "${currentSong.title}" into player bar'),
+                      content: Text('Playing "${currentSong.title}"'),
                       duration: const Duration(seconds: 1),
                     ),
                   );
