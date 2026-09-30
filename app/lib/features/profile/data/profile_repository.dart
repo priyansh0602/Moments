@@ -8,6 +8,18 @@ final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
   return ProfileRepository(ref.watch(supabaseClientProvider));
 });
 
+/// Exception thrown when updating a profile that does not exist in the database.
+class ProfileNotFoundException implements Exception {
+  /// Creates a [ProfileNotFoundException].
+  const ProfileNotFoundException(this.message);
+
+  /// Error message describing the missing profile condition.
+  final String message;
+
+  @override
+  String toString() => 'ProfileNotFoundException: $message';
+}
+
 /// Repository handling all profile reads, updates, and username availability queries.
 class ProfileRepository {
   /// Creates a [ProfileRepository].
@@ -77,12 +89,16 @@ class ProfileRepository {
 
     final response = await _client
         .from('profiles')
-        .upsert({
-          'id': id,
-          ...updates,
-        })
+        .update(updates)
+        .eq('id', id)
         .select()
-        .single();
+        .maybeSingle();
+
+    if (response == null) {
+      throw ProfileNotFoundException(
+        'Profile row not found for user ID: $id. The initial account trigger may not have executed.',
+      );
+    }
 
     return UserProfile.fromJson(response);
   }

@@ -31,7 +31,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       final isAuthRoute = location == AppRoutes.signIn;
       final isSplash = location == AppRoutes.splash;
-      final isOnboarding = location == AppRoutes.onboardingUsername;
 
       debugPrint(
         '[GoRouter redirect] location: "$location", '
@@ -51,15 +50,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return AppRoutes.signIn;
       }
 
-      // 3. User authenticated but requires username setup
-      if (authState.needsOnboarding) {
-        if (isOnboarding) return null;
-        return AppRoutes.onboardingUsername;
-      }
-
-      // 4. Authenticated & fully onboarded
-      if (authState.isAuthenticated) {
-        if (isAuthRoute || isSplash || isOnboarding) {
+      // 3. Authenticated user (routes directly into main shell without blocking onboarding)
+      if (authState.isAuthenticated || authState.needsOnboarding) {
+        if (isAuthRoute || isSplash) {
           return AppRoutes.search;
         }
       }
@@ -87,12 +80,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
-      // Onboarding Route
+      // Onboarding Route (optional, reachable from Profile / direct)
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.onboardingUsername,
         name: 'onboarding-username',
-        pageBuilder: (context, state) => const NoTransitionPage(
+        pageBuilder: (context, state) => const MaterialPage(
           child: OnboardingUsernameScreen(),
         ),
       ),

@@ -27,6 +27,35 @@ class ProfileScreen extends ConsumerWidget {
     final bio = profile?.bio ?? 'Late night music lover and moment creator.';
 
     final avatarInitial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'M';
+    final avatarUrl = profile?.avatarUrl;
+    List<Color> avatarGradient = const [AppColors.primary, AppColors.accent];
+    IconData? avatarIcon;
+    if (avatarUrl != null && avatarUrl.startsWith('avatar:')) {
+      final key = avatarUrl.replaceFirst('avatar:', '');
+      switch (key) {
+        case 'electric_violet':
+          avatarGradient = const [Color(0xFF8A2BE2), Color(0xFF4A00E0)];
+          avatarIcon = Icons.headphones_rounded;
+          break;
+        case 'neon_synth':
+          avatarGradient = const [Color(0xFF00F2FE), Color(0xFF4FACFE)];
+          avatarIcon = Icons.graphic_eq_rounded;
+          break;
+        case 'amber_glow':
+          avatarGradient = const [Color(0xFFFFB800), Color(0xFFFF5E3A)];
+          avatarIcon = Icons.flash_on_rounded;
+          break;
+        case 'night_void':
+          avatarGradient = const [Color(0xFF2E2B3E), Color(0xFF16151E)];
+          avatarIcon = Icons.nightlight_round;
+          break;
+        case 'sunset_coral':
+        default:
+          avatarGradient = const [AppColors.primary, AppColors.accent];
+          avatarIcon = Icons.music_note_rounded;
+          break;
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -57,28 +86,30 @@ class ProfileScreen extends ConsumerWidget {
                     height: 86,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: const LinearGradient(
-                        colors: [AppColors.primary, AppColors.accent],
+                      gradient: LinearGradient(
+                        colors: avatarGradient,
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withAlpha(80),
+                          color: avatarGradient.first.withAlpha(80),
                           blurRadius: 18,
                           offset: const Offset(0, 6),
                         ),
                       ],
                     ),
                     child: Center(
-                      child: Text(
-                        avatarInitial,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 36,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
+                      child: avatarIcon != null
+                          ? Icon(avatarIcon, color: Colors.white, size: 40)
+                          : Text(
+                              avatarInitial,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 36,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -133,8 +164,8 @@ class ProfileScreen extends ConsumerWidget {
                   _buildProfileTile(
                     context,
                     icon: Icons.edit_note_rounded,
-                    title: 'Edit Profile',
-                    subtitle: 'Update username, display name, and bio',
+                    title: 'Edit Profile & Style',
+                    subtitle: 'Customize handle, avatar style, display name, and bio',
                     onTap: () => context.push(AppRoutes.editProfile),
                   ),
                   const Divider(),

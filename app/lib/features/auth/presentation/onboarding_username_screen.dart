@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:moments/core/config/supabase_provider.dart';
 import 'package:moments/core/theme/app_colors.dart';
 import 'package:moments/core/widgets/primary_button.dart';
 import 'package:moments/features/profile/data/profile_repository.dart';
 import 'package:moments/features/profile/presentation/providers/profile_provider.dart';
 
-/// Screen displayed to newly authenticated users to set a unique username,
+/// Screen displayed to users to set a unique username,
 /// optional display name, and select a profile avatar.
 class OnboardingUsernameScreen extends ConsumerStatefulWidget {
   /// Creates an [OnboardingUsernameScreen].
@@ -123,8 +124,22 @@ class _OnboardingUsernameScreenState
             avatarUrl: selectedAvatar,
           );
 
-      // Force refresh of the profile provider so the router redirects to /search
+      // Force refresh of the profile provider so components react
       await ref.read(currentUserProfileProvider.notifier).refresh();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Handle and profile style updated!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go('/search');
+        }
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -143,6 +158,18 @@ class _OnboardingUsernameScreenState
     final theme = Theme.of(context);
 
     return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/search');
+            }
+          },
+        ),
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(

@@ -24,11 +24,13 @@ class AuthStatusState {
     required this.status,
     this.userId,
     this.username,
+    this.hasPlaceholderUsername = false,
   });
 
   final AppAuthStatus status;
   final String? userId;
   final String? username;
+  final bool hasPlaceholderUsername;
 
   bool get isLoading => status == AppAuthStatus.loading;
   bool get isAuthenticated => status == AppAuthStatus.authenticated;
@@ -90,27 +92,15 @@ final authStatusProvider = Provider<AuthStatusState>((ref) {
 
   final profile = profileAsync.value;
 
-  // 4. User authenticated but requires real username
-  if (profile == null || profile.isPlaceholderUsername) {
-    debugPrint(
-      '[AuthStatusProvider] User ${currentUser.id} needs onboarding '
-      '(username: ${profile?.username})',
-    );
-    return AuthStatusState(
-      status: AppAuthStatus.needsOnboarding,
-      userId: currentUser.id,
-      username: profile?.username,
-    );
-  }
-
-  // 5. Authenticated & fully onboarded
+  // 4. Authenticated user (onboarding is optional, goes straight to app)
   debugPrint(
-    '[AuthStatusProvider] User ${currentUser.id} fully onboarded '
-    '(${profile.username})',
+    '[AuthStatusProvider] User ${currentUser.id} authenticated '
+    '(username: ${profile?.username}, placeholder: ${profile?.isPlaceholderUsername})',
   );
   return AuthStatusState(
     status: AppAuthStatus.authenticated,
     userId: currentUser.id,
-    username: profile.username,
+    username: profile?.username,
+    hasPlaceholderUsername: profile?.isPlaceholderUsername ?? false,
   );
 });

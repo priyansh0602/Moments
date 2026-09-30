@@ -17,6 +17,7 @@ import 'package:moments/features/moments/presentation/your_moments_screen.dart';
 import 'package:moments/features/player/presentation/full_player_screen.dart';
 import 'package:moments/features/player/presentation/mini_player_bar.dart';
 import 'package:moments/features/profile/domain/models/user_profile.dart';
+import 'package:moments/features/profile/presentation/edit_profile_screen.dart';
 import 'package:moments/features/profile/presentation/profile_screen.dart';
 import 'package:moments/features/profile/presentation/providers/profile_provider.dart';
 import 'package:moments/features/search/presentation/search_screen.dart';
@@ -105,7 +106,7 @@ void main() {
       expect(find.byType(SecondaryButton), findsNothing);
     });
 
-    testWidgets('User needing onboarding is redirected to OnboardingUsernameScreen', (
+    testWidgets('New user with placeholder handle routes directly to Search tab', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -113,9 +114,10 @@ void main() {
           overrides: [
             authStatusProvider.overrideWithValue(
               const AuthStatusState(
-                status: AppAuthStatus.needsOnboarding,
+                status: AppAuthStatus.authenticated,
                 userId: 'new-user-id',
                 username: 'user_a1b2c',
+                hasPlaceholderUsername: true,
               ),
             ),
           ],
@@ -124,9 +126,43 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(OnboardingUsernameScreen), findsOneWidget);
-      expect(find.text('Pick Your Handle'), findsOneWidget);
-      expect(find.text('Complete Setup'), findsOneWidget);
+      // Confirms user is not blocked on OnboardingUsernameScreen and lands on Search
+      expect(find.byType(OnboardingUsernameScreen), findsNothing);
+      expect(find.byType(SearchScreen), findsOneWidget);
+    });
+
+    testWidgets('User can navigate to EditProfileScreen from Profile', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authStatusProvider.overrideWithValue(
+              const AuthStatusState(
+                status: AppAuthStatus.authenticated,
+                userId: 'test-user-id',
+                username: 'priyansh',
+              ),
+            ),
+            currentUserProfileProvider.overrideWith(_FakeProfileNotifier.new),
+          ],
+          child: const MomentsApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Navigate to Profile tab
+      await tester.tap(find.text('Profile'));
+      await tester.pumpAndSettle();
+
+      // Tap Edit Profile & Style tile
+      await tester.tap(find.text('Edit Profile & Style'));
+      await tester.pumpAndSettle();
+
+      // Confirm EditProfileScreen opens with avatar and handle styling
+      expect(find.byType(EditProfileScreen), findsOneWidget);
+      expect(find.text('Edit Profile & Style'), findsOneWidget);
+      expect(find.text('Save Changes'), findsOneWidget);
     });
 
     test('UserProfile isPlaceholderUsername correctly identifies placeholder handles', () {
