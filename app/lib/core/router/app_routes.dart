@@ -20,4 +20,7 @@ abstract class AppRoutes {
 
   /// Expanded full player route (top-level modal screen).
   static const String player = '/player';
+
+  /// Placeholder selected song preview screen (Phase 4).
+  static const String songPreview = '/song/preview';
 }

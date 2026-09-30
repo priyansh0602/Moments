@@ -15,7 +15,7 @@ Moments is a cross-platform mobile and web application that enables users to cur
 ### Core Principle 2: Zero Client-Side Secret Exposure
 > **The YouTube Data API v3 key never ships inside the mobile client or frontend bundle.**
 > 
-> All YouTube queries, searches, and metadata lookups are proxied through an authenticated **Supabase Edge Function** (`supabase/functions/youtube-search`). The mobile app calls this Edge Function using its Supabase user session. The API key is securely stored in Supabase Secrets.
+> All YouTube queries, searches, and metadata lookups are proxied through an authenticated **Supabase Edge Function** (`supabase/functions/search-songs`). The mobile app calls this Edge Function using its Supabase client (`client.functions.invoke('search-songs', ...)`). The API key is securely stored in Supabase Secrets (`YOUTUBE_API_KEY`).
 
 ---
 
@@ -37,9 +37,10 @@ Moments is a cross-platform mobile and web application that enables users to cur
 |                              BACKEND & DATA LAYER                                 |
 |                       Supabase (Managed PostgreSQL 15)                            |
 |  - PostgreSQL Database with Row Level Security (RLS) policies                     |
-|  - Supabase Auth (Email, OAuth, Session Tokens)                                   |
+|  - Supabase Auth (Google OAuth, Session Tokens)                                   |
 |  - Supabase Storage (Group covers, avatars)                                       |
-|  - Supabase Edge Functions (Deno / TypeScript runtime)                            |
+|  - Supabase Edge Functions (`search-songs` Deno / TypeScript runtime)             |
+|  - Quota-aware `search_cache` & `search_rate_limit` tables                        |
 +-----------------------------------------------------------------------------------+
                                      |
                                      v
@@ -58,28 +59,29 @@ Moments is a cross-platform mobile and web application that enables users to cur
 sequenceDiagram
     autonumber
     actor User as User (Mobile App)
-    participant Edge as Supabase Edge Function
+    participant Edge as Supabase Edge Function (search-songs)
+    participant DB as Supabase PostgreSQL (Cache & RLS)
     participant YT as YouTube Data API v3
-    participant DB as Supabase PostgreSQL (RLS)
-    participant Web as Next.js Web App
 
     %% Search Flow
-    Note over User,YT: Song Search Flow
-    User->>Edge: POST /functions/v1/youtube-search (query)
-    Edge->>YT: Search query + secure Server API Key
-    YT-->>Edge: YouTube search results
-    Edge-->>User: Filtered search items
-
-    %% Save Moment Flow
-    Note over User,DB: Create & Save Moment
-    User->>DB: INSERT INTO moments (video_id, start_time, end_time, title)
-    DB-->>User: Moment created (id: UUID)
-
-    %% Share Flow
-    Note over User,Web: Deep Link & Web Sharing
-    User->>Web: Share link: https://moments.app/m/{id}
-    Web->>DB: Fetch Moment metadata by ID
-    Web-->>User: Render OpenGraph preview & YouTube IFrame playback
+    Note over User,YT: Song Search Flow (Phase 4)
+    User->>Edge: POST /functions/v1/search-songs { query, pageToken? }
+    Edge->>DB: Check rate limit for user_id (max 15/min)
+    alt Rate limit exceeded
+        Edge-->>User: 429 Too Many Requests
+    end
+    opt First page query (no pageToken)
+        Edge->>DB: SELECT results FROM search_cache WHERE query_key = normalized(query)
+        alt Cache hit (< 24h old)
+            Edge-->>User: 200 OK (cached: true, 0 quota units consumed)
+        end
+    end
+    Edge->>YT: search.list (Music category, maxResults=15) [100 quota units]
+    YT-->>Edge: YouTube video items (snippets, thumbnails)
+    Edge->>YT: videos.list?part=contentDetails&id=batch_ids [1 quota unit]
+    YT-->>Edge: Duration content details
+    Edge->>DB: UPSERT search_cache (query_key, results, now)
+    Edge-->>User: 200 OK { items: [Song], nextPageToken, cached: false }
 ```
 
 ---
@@ -114,6 +116,8 @@ sequenceDiagram
 - **`likes`**: Social likes on Moments with composite uniqueness on `(user_id, moment_id)`.
 - **`saves`**: Private personal bookmarks of other creators' Moments into a user's library.
 - **`follows`**: Directed social follow graph edges between user profiles with self-follow prevention.
+- **`search_cache`**: Quota-aware cache storing sanitized YouTube search results indexed by normalized query text.
+- **`search_rate_limit`**: Per-user sliding-window request tracker restricting search frequency to prevent quota drain.
 
 ### Row-Level Security (RLS) Philosophy
 Every table has Row-Level Security (`ENABLE ROW LEVEL SECURITY`) activated unconditionally:
@@ -121,4 +125,33 @@ Every table has Row-Level Security (`ENABLE ROW LEVEL SECURITY`) activated uncon
 - **Zero-Trust Writes**: Only authenticated owners can `INSERT`, `UPDATE`, or `DELETE` their own entities. Profile inserts are strictly automated via `auth.users` trigger with `SECURITY DEFINER`.
 - **Group Isolation**: `moment_group_items` inherit access rules dynamically through an `EXISTS` subquery verifying the parent `moment_groups` ownership or public visibility.
 - **Private Bookmarks**: `saves` are strictly private to the user (`auth.uid() = user_id`), while `likes` and `follows` permit open reads for counters and social discovery.
+- **Service Role Restriction**: `search_cache` allows public `SELECT` reads while reserving writes strictly to `service_role`. `search_rate_limit` is 100% service-role isolated.
+
+---
+
+## 6. YouTube Song Search Proxy Architecture (Phase 4)
+
+### 6.1 Edge-Function-in-the-Middle Pattern
+To protect third-party credentials, the mobile client never communicates with YouTube Data API v3 directly:
+1. The client invokes Supabase Edge Function `search-songs`.
+2. The Edge Function runs securely in Deno with server-side access to `YOUTUBE_API_KEY` stored exclusively in Supabase Secrets.
+3. Upstream errors, quota limits, and raw YouTube API payloads are sanitized before returning clean, standardized song DTOs to the app.
+
+### 6.2 Quota Analysis & Caching Strategy
+- **YouTube API Quota Cost**:
+  - `search.list` costs **100 quota units** per call.
+  - `videos.list` (batch duration lookup) costs **1 quota unit** per call.
+  - Total per unique search = **101 quota units**.
+  - Default daily free tier quota = **10,000 units/day**.
+  - Without caching: ~99 searches/day would exhaust the entire project's quota.
+- **24-Hour Cache Window (`search_cache`)**:
+  - Music video titles, channel names, and durations are virtually immutable for published tracks.
+  - Queries are normalized (`query.toLowerCase().trim()`) and cached in PostgreSQL JSONB for 24 hours (`86,400,000 ms`).
+  - Cache hits consume **0 YouTube quota units**, responding with sub-100ms latency.
+  - With heavy clustering around trending songs, artist names, and popular tracks, caching enables hundreds to thousands of daily searches while remaining within free tier limits.
+
+### 6.3 Rate Limiting / Abuse Guard
+- Any authenticated user could potentially loop search queries if a client-side defect occurs.
+- `search_rate_limit` tracks rolling 60-second windows per `auth.uid()`, capping queries at **15 searches per minute**.
+- Exceeded thresholds immediately reject with HTTP 429 (`Too Many Requests`), halting upstream quota burns.
 

@@ -187,7 +187,7 @@ void main() {
 
       // Verify Search screen is default
       expect(find.byType(SearchScreen), findsOneWidget);
-      expect(find.text('Trending Snippets'), findsOneWidget);
+      expect(find.text('Search YouTube Music'), findsOneWidget);
 
       // Verify MiniPlayerBar is visible with its track info
       expect(find.byType(MiniPlayerBar), findsOneWidget);

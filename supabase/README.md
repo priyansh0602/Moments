@@ -80,17 +80,53 @@ supabase gen types dart --project-id syrzrwbbmpenqurkcaon --schema public > app/
 *(We will consume and bind these generated types in Phase 3 repositories).*
 
 ### Edge Functions (Phase 4+)
-Serverless TypeScript functions that run on Deno:
-- YouTube Data API v3 integration runs exclusively in Supabase Edge Functions (`supabase/functions/youtube-search/`) so the YouTube API key never ships inside the mobile client.
-- Test function locally:
-  ```bash
-  supabase functions serve
-  ```
-- Deploy function to remote project:
-  ```bash
-  supabase functions deploy <function_name>
-  ```
-- Set remote secrets:
-  ```bash
-  supabase secrets set YOUTUBE_API_KEY=your_key_here
-  ```
+Serverless TypeScript functions that run on Deno (Supabase Edge Runtime):
+
+- **Function Name**: `search-songs` (`supabase/functions/search-songs/index.ts`)
+- **Purpose**: Proxies YouTube Data API v3 calls, enriches video duration via batch `videos.list`, caches results in `search_cache` (24h TTL), and enforces rate limits via `search_rate_limit`.
+
+#### 1. Set Remote Secrets
+Set the YouTube API key in your remote Supabase project:
+```bash
+# Using Supabase CLI
+supabase secrets set YOUTUBE_API_KEY=<your_youtube_data_api_v3_key>
+
+# Verify secrets list
+supabase secrets list
+```
+*(Alternatively, configure `YOUTUBE_API_KEY` under **Project Settings &rarr; Edge Functions &rarr; Secrets** in your Supabase Dashboard).*
+
+#### 2. Apply Database Migration
+Apply the `search_cache` and `search_rate_limit` schema migration:
+```bash
+# Via Supabase CLI (if linked)
+supabase db push
+
+# Or execute SQL directly in Supabase SQL Editor:
+# Copy contents of supabase/migrations/20260930120000_create_search_cache_and_rate_limit.sql
+# into https://supabase.com/dashboard/project/syrzrwbbmpenqurkcaon/sql/new
+```
+
+#### 3. Test Function Locally
+```bash
+# Serve Edge Functions locally with test env vars
+supabase functions serve search-songs --env-file supabase/.env.local
+```
+
+#### 4. Deploy Function to Remote Project
+```bash
+# Initial deployment
+supabase functions deploy search-songs --project-ref syrzrwbbmpenqurkcaon
+
+# Redeploy after edits
+supabase functions deploy search-songs --no-verify-jwt
+```
+
+#### 5. Test Function via cURL
+```bash
+# Test POST invocation
+curl -i --location --request POST 'https://syrzrwbbmpenqurkcaon.supabase.co/functions/v1/search-songs' \
+  --header 'Authorization: Bearer <anon_or_user_jwt>' \
+  --header 'Content-Type: application/json' \
+  --data '{"query":"after dark"}'
+```

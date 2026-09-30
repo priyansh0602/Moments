@@ -12,7 +12,9 @@ import 'package:moments/features/moments/presentation/your_moments_screen.dart';
 import 'package:moments/features/player/presentation/full_player_screen.dart';
 import 'package:moments/features/profile/presentation/edit_profile_screen.dart';
 import 'package:moments/features/profile/presentation/profile_screen.dart';
+import 'package:moments/features/search/domain/models/song.dart';
 import 'package:moments/features/search/presentation/search_screen.dart';
+import 'package:moments/features/search/presentation/selected_song_screen.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -98,6 +100,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => const MaterialPage(
           child: EditProfileScreen(),
         ),
+      ),
+
+      // Selected Song Preview Route (Phase 4 placeholder)
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.songPreview,
+        name: 'song-preview',
+        pageBuilder: (context, state) {
+          final song = state.extra as Song?;
+          return MaterialPage(
+            child: SelectedSongScreen(song: song),
+          );
+        },
       ),
 
       // Stateful shell branch route preserving state across all 4 bottom tabs

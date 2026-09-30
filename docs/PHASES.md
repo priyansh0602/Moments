@@ -24,10 +24,10 @@
   - Auth state management via Riverpod
   - Profile setup and edit flows
 
-- [ ] **Phase 4: Song Search**
-  - Supabase Edge Function `youtube-search` with server-side YouTube Data API v3 integration
-  - Flutter search presentation, debounce, recent search caching
-  - Video selection and metadata extraction
+- [x] **Phase 4: Song Search**
+  - Supabase Edge Function `search-songs` with server-side YouTube Data API v3 integration
+  - Quota-aware 24h caching (`search_cache`) and abuse guard rate limiting (`search_rate_limit`)
+  - Flutter search presentation, debounce, pagination, and selected song placeholder route
 
 - [ ] **Phase 5: Song Player**
   - Visible YouTube IFrame player integration
