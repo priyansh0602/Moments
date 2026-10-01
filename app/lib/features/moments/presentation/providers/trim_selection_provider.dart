@@ -16,11 +16,18 @@ class TrimSelectionNotifier extends Notifier<TrimSelection> {
     final start = currentPos.clamp(0.0, max(0.0, totalSecs - 15.0)).toDouble();
     final end = min(totalSecs, start + 15.0);
 
-    // Re-initialize only if the active video changes, preventing position ticks from wiping user edits
+    // Re-initialize if the active video changes or if track duration finishes buffering/loading
     ref.listen<PlayerPlaybackState>(
       playerPlaybackStateProvider,
       (previous, next) {
-        if (previous?.videoId != next.videoId && next.videoId != null && next.videoId!.isNotEmpty) {
+        final videoChanged = previous?.videoId != next.videoId &&
+            next.videoId != null &&
+            next.videoId!.isNotEmpty;
+        final durationDiscovered =
+            (previous == null || previous.duration == Duration.zero) &&
+                next.duration > Duration.zero;
+
+        if (videoChanged || durationDiscovered) {
           initFromPlayer(next);
         }
       },
@@ -152,9 +159,14 @@ class TrimSelectionNotifier extends Notifier<TrimSelection> {
 
   /// Halts range previewing and restores normal playback behavior.
   Future<void> stopPreview() async {
-    final controller = ref.read(playerControllerProvider);
-    state = state.copyWith(isPreviewing: false);
-    controller.clearPreviewRange();
+    if (!state.isPreviewing) return;
+    try {
+      final controller = ref.read(playerControllerProvider);
+      state = state.copyWith(isPreviewing: false);
+      controller.clearPreviewRange();
+    } catch (_) {
+      // Ignored if provider ref is already disposed during teardown
+    }
   }
 
   void _syncPreviewRangeIfActive() {

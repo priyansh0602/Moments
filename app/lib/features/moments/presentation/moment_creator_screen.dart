@@ -24,26 +24,30 @@ class MomentCreatorScreen extends ConsumerStatefulWidget {
 }
 
 class _MomentCreatorScreenState extends ConsumerState<MomentCreatorScreen> {
+  late TrimSelectionNotifier _trimNotifier;
+
   @override
   void initState() {
     super.initState();
+    _trimNotifier = ref.read(trimSelectionProvider.notifier);
+
     // Ensure the persistent player host maintains expanded widescreen video mode
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(playerPlaybackStateProvider.notifier).setExpanded(true);
       final playerState = ref.read(playerPlaybackStateProvider);
-      ref.read(trimSelectionProvider.notifier).initFromPlayer(playerState);
+      _trimNotifier.initFromPlayer(playerState);
     });
   }
 
   @override
   void dispose() {
     // If user navigates away while previewing, halt range loop cleanly
-    ref.read(trimSelectionProvider.notifier).stopPreview();
+    Future.microtask(() => _trimNotifier.stopPreview());
     super.dispose();
   }
 
   void _onPopInvoked() {
-    ref.read(trimSelectionProvider.notifier).stopPreview();
+    _trimNotifier.stopPreview();
   }
 
   @override
@@ -76,7 +80,11 @@ class _MomentCreatorScreenState extends ConsumerState<MomentCreatorScreen> {
             tooltip: 'Back to Player',
             onPressed: () {
               _onPopInvoked();
-              context.pop();
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              } else {
+                context.pop();
+              }
             },
           ),
           title: Text(

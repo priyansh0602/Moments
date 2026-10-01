@@ -74,31 +74,32 @@ class MomentRangeSlider extends StatelessWidget {
 
                 // 1b. Real-time playhead indicator
                 if (currentPlaybackSeconds != null && maxDuration > 0)
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final usableWidth = constraints.maxWidth - 32.0; // padding
-                      final playheadFraction = (currentPlaybackSeconds! / maxDuration).clamp(0.0, 1.0);
-                      final playheadX = 16.0 + (usableWidth * playheadFraction);
+                  Positioned.fill(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final usableWidth = constraints.maxWidth - 32.0; // padding
+                        final playheadFraction = (currentPlaybackSeconds! / maxDuration).clamp(0.0, 1.0);
+                        final playheadX = 16.0 + (usableWidth * playheadFraction);
 
-                      return Positioned(
-                        left: playheadX - 1.5,
-                        top: 6,
-                        bottom: 6,
-                        child: Container(
-                          width: 3.0,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(2),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withAlpha(80),
-                                blurRadius: 4,
-                              ),
-                            ],
+                        return Align(
+                          alignment: Alignment.centerLeft,
+                          child: Container(
+                            margin: EdgeInsets.only(left: (playheadX - 1.5).clamp(0.0, constraints.maxWidth), top: 6, bottom: 6),
+                            width: 3.0,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withAlpha(80),
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
 
                 // 1c. Dual-handle Range Slider
