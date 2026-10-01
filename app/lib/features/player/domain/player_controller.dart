@@ -28,6 +28,19 @@ abstract class PlayerController {
   /// Seeks to a specific timestamp in [seconds].
   Future<void> seekTo(double seconds);
 
+  /// Sets boundaries for previewing a trimmed section.
+  ///
+  /// When playback reaches or crosses [endSeconds], the controller will automatically
+  /// seek back to [startSeconds] if [loop] is true, or pause.
+  void setPreviewRange({
+    double? startSeconds,
+    double? endSeconds,
+    bool loop = true,
+  });
+
+  /// Clears any active preview range boundary restrictions.
+  void clearPreviewRange();
+
   /// Synchronous snapshot of the current playback state.
   PlayerPlaybackState get currentState;
 

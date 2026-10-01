@@ -102,6 +102,10 @@ class YoutubePlayerControllerImpl implements PlayerController {
     );
   }
 
+  double? _previewStartSeconds;
+  double? _previewEndSeconds;
+  bool _previewLoop = true;
+
   void _handleVideoStateChange(YoutubeVideoState videoState) {
     if (_state.duration == Duration.zero) {
       _fetchDuration();
@@ -115,23 +119,41 @@ class YoutubePlayerControllerImpl implements PlayerController {
         ),
       ),
     );
+
+    _checkPreviewBoundary(videoState.position);
   }
 
   void _startPositionPolling() {
     _positionPollTimer?.cancel();
-    _positionPollTimer = Timer.periodic(const Duration(milliseconds: 500), (_) async {
+    _positionPollTimer = Timer.periodic(const Duration(milliseconds: 250), (_) async {
       try {
         final seconds = await _youtubeController.currentTime;
         if (seconds > 0) {
           final pos = Duration(milliseconds: (seconds * 1000).round());
           if (pos != _state.position) {
             _updateState(_state.copyWith(position: pos));
+            _checkPreviewBoundary(pos);
           }
         }
       } catch (_) {
         // Ignored during transitions
       }
     });
+  }
+
+  void _checkPreviewBoundary(Duration pos) {
+    if (_previewEndSeconds != null && _previewStartSeconds != null) {
+      final currentSeconds = pos.inMilliseconds / 1000.0;
+      if (currentSeconds >= _previewEndSeconds!) {
+        if (_previewLoop) {
+          seekTo(_previewStartSeconds!);
+          play();
+        } else {
+          pause();
+          clearPreviewRange();
+        }
+      }
+    }
   }
 
   void _stopPositionPolling() {
@@ -227,6 +249,23 @@ class YoutubePlayerControllerImpl implements PlayerController {
     final newPos = Duration(milliseconds: (seconds * 1000).round());
     _updateState(_state.copyWith(position: newPos));
     await _youtubeController.seekTo(seconds: seconds, allowSeekAhead: true);
+  }
+
+  @override
+  void setPreviewRange({
+    double? startSeconds,
+    double? endSeconds,
+    bool loop = true,
+  }) {
+    _previewStartSeconds = startSeconds;
+    _previewEndSeconds = endSeconds;
+    _previewLoop = loop;
+  }
+
+  @override
+  void clearPreviewRange() {
+    _previewStartSeconds = null;
+    _previewEndSeconds = null;
   }
 
   /// Sets whether the full-screen player is expanded.

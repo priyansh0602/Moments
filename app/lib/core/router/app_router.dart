@@ -8,6 +8,9 @@ import 'package:moments/features/auth/presentation/providers/auth_status_provide
 import 'package:moments/features/auth/presentation/sign_in_screen.dart';
 import 'package:moments/features/auth/presentation/splash_screen.dart';
 import 'package:moments/features/groups/presentation/groups_screen.dart';
+import 'package:moments/features/moments/domain/models/trim_selection.dart';
+import 'package:moments/features/moments/presentation/moment_creator_screen.dart';
+import 'package:moments/features/moments/presentation/moment_ready_screen.dart';
 import 'package:moments/features/moments/presentation/your_moments_screen.dart';
 import 'package:moments/features/player/presentation/full_player_screen.dart';
 import 'package:moments/features/profile/presentation/edit_profile_screen.dart';
@@ -197,6 +200,29 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             );
           },
         ),
+      ),
+
+      // Moment Creator Screen (Phase 6)
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.createMoment,
+        name: 'create-moment',
+        pageBuilder: (context, state) => const MaterialPage(
+          child: MomentCreatorScreen(),
+        ),
+      ),
+
+      // Moment Ready Confirmation Screen (Phase 6)
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.momentReady,
+        name: 'moment-ready',
+        pageBuilder: (context, state) {
+          final selection = state.extra as TrimSelection;
+          return MaterialPage(
+            child: MomentReadyScreen(selection: selection),
+          );
+        },
       ),
     ],
   );

@@ -63,6 +63,27 @@ class FakePlayerController implements PlayerController {
     _emit(_state.copyWith(position: pos));
   }
 
+  double? previewStartSeconds;
+  double? previewEndSeconds;
+  bool previewLoop = true;
+
+  @override
+  void setPreviewRange({
+    double? startSeconds,
+    double? endSeconds,
+    bool loop = true,
+  }) {
+    previewStartSeconds = startSeconds;
+    previewEndSeconds = endSeconds;
+    previewLoop = loop;
+  }
+
+  @override
+  void clearPreviewRange() {
+    previewStartSeconds = null;
+    previewEndSeconds = null;
+  }
+
   void setExpanded(bool expanded) {
     _emit(_state.copyWith(isExpanded: expanded));
   }

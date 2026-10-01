@@ -63,13 +63,15 @@ class MiniPlayerBar extends ConsumerWidget {
           // Main interactive bar content
           Positioned.fill(
             top: 2.5,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: () {
-                ref.read(playerPlaybackStateProvider.notifier).setExpanded(true);
-                context.push(AppRoutes.player);
-              },
-              child: Padding(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () {
+                  ref.read(playerPlaybackStateProvider.notifier).setExpanded(true);
+                  context.push(AppRoutes.player);
+                },
+                child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10.0),
                 child: Row(
                   children: [
@@ -169,8 +171,9 @@ class MiniPlayerBar extends ConsumerWidget {
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
+    ),
     );
   }
 }

@@ -37,10 +37,13 @@
   - Bi-directional OS media session notification proxy via `audio_service`
   - Seamless tap-to-play from search results
 
-- [ ] **Phase 6: Moment Creator**
-  - Dual-handle waveform / timeline range selector for start and end timestamp trimming
-  - Millisecond precision controls, loop preview of selected range
-  - Moment metadata input (title, notes, tags)
+- [x] **Phase 6: Moment Creator**
+  - Freezed `TrimSelection` domain model with strict duration validation (3s-60s range)
+  - Interactive dual-handle range slider (`MomentRangeSlider`) with stylized waveform equalizer visualization
+  - Quick-capture triggers ("Set Start Here", "Set End Here") and micro-steppers (-1s / +1s)
+  - Live loop preview engine in `PlayerController` with automatic boundary enforcement
+  - Continuous YouTube playback in `MomentCreatorScreen` via `PersistentPlayerHost`
+  - Confirmation screen (`MomentReadyScreen`) showcasing trimmed selection summary and Phase 7 roadmap notice
 
 - [ ] **Phase 7: Save & "Your Moments"**
   - Save Moment to database via Supabase client

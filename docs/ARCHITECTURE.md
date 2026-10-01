@@ -187,3 +187,33 @@ To protect third-party credentials, the mobile client never communicates with Yo
 - **Info.plist**: `UIBackgroundModes` with `<string>audio</string>` is configured in `ios/Runner/Info.plist`.
 - **Xcode Manual Setting Note**: On iOS devices, the "Audio, AirPlay, and Picture in Picture" capability must be toggled in Xcode's "Signing & Capabilities" tab for production App Store provisioning profiles.
 
+---
+
+## 8. Moment Trimming Engine Architecture (Phase 6)
+
+### 8.1 Trimming Domain Model & Pure Validation (`TrimSelection`)
+- **Immutable Freezed Domain Model**:
+  `TrimSelection` models the exact start, end, and duration bounds of a proposed clip.
+- **Pure Validation Boundary (`validateTrim`)**:
+  - Enforces minimum clip length: **3.0 seconds** (`TrimSelection.minClipSeconds`).
+  - Enforces maximum clip length: **60.0 seconds** (`TrimSelection.maxClipSeconds`).
+  - Strict boundary assertions: start $\ge$ 0, end > start, end $\le$ total song duration.
+  - Zero side effects; pure function enables fast, deterministic unit test coverage.
+
+### 8.2 Boundary-Constrained Loop Preview Engine
+- **PlayerController Range Enforcement**:
+  - `setPreviewRange({startSeconds, endSeconds, loop: true})` configures playback boundaries on `YoutubePlayerControllerImpl`.
+  - Background polling timer (250ms interval) tracks live playback position.
+  - When playback position reaches or exceeds `endSeconds`, the controller immediately seeks back to `startSeconds` (`seekTo(start); play();`) creating a seamless audio loop.
+  - Calling `clearPreviewRange()` halts loop tracking and restores full track playback.
+
+### 8.3 Dual-Handle Waveform Range Slider (`MomentRangeSlider`)
+- **Custom Grab Handles**: Custom `RangeSliderThumbShape` with dual-layer circular borders and center grip indicators.
+- **Waveform Equalizer Visualization**: Custom painted responsive equalizer bars that dynamically change color and opacity inside vs. outside the active clip range.
+- **Live Playhead Indicator**: Real-time white playhead position bar superimposed over the timeline ruler and waveform.
+
+### 8.4 State Management Isolation
+- `TrimSelectionNotifier` reads initial track duration from `PlayerPlaybackState` once upon mount and listens strictly for `videoId` switches.
+- Position ticks from normal song playback never trigger rebuilds or wipe out active drag adjustments.
+- Dedicated capture triggers ("Set Start Here", "Set End Here") and micro-steppers (-1s / +1s) allow single-tap millisecond precision.
+

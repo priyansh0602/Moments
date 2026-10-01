@@ -23,4 +23,10 @@ abstract class AppRoutes {
 
   /// Placeholder selected song preview screen (Phase 4).
   static const String songPreview = '/song/preview';
+
+  /// Moment trimming creator route (Phase 6).
+  static const String createMoment = '/create-moment';
+
+  /// Moment ready / saved stub confirmation route (Phase 6).
+  static const String momentReady = '/moment/ready';
 }

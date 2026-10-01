@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:moments/core/router/app_routes.dart';
 import 'package:moments/core/theme/app_colors.dart';
 import 'package:moments/core/widgets/empty_state.dart';
 import 'package:moments/core/widgets/loading_indicator.dart';
@@ -295,19 +297,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                 .read(playerPlaybackStateProvider.notifier)
                                 .playSong(song);
                           },
-                          onTrimTap: () {
-                            // Starts playback and displays feedback for future trim integration
-                            ref
+                          onTrimTap: () async {
+                            await ref
                                 .read(playerPlaybackStateProvider.notifier)
                                 .playSong(song);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Playing "${song.title}" • Moment trimming in Phase 6',
-                                ),
-                                duration: const Duration(seconds: 1),
-                              ),
-                            );
+                            if (context.mounted) {
+                              context.push(AppRoutes.createMoment);
+                            }
                           },
                         ),
                       );
