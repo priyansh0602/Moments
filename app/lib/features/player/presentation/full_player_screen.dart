@@ -389,11 +389,14 @@ class _FullPlayerScreenState extends ConsumerState<FullPlayerScreen> {
                           color: AppColors.primary,
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          'YouTube IFrame Player • Phase 5 Playback Engine',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w600,
+                        Flexible(
+                          child: Text(
+                            'YouTube IFrame Player • Phase 5 Playback Engine',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:moments/core/router/app_routes.dart';
+import 'package:moments/core/router/player_route_observer.dart';
 import 'package:moments/core/widgets/app_shell.dart';
 import 'package:moments/features/auth/presentation/onboarding_username_screen.dart';
 import 'package:moments/features/auth/presentation/providers/auth_status_provider.dart';
@@ -30,6 +31,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     navigatorKey: _rootNavigatorKey,
     initialLocation: AppRoutes.splash,
     refreshListenable: authNotifier,
+    observers: [
+      PlayerRouteObserver(ref),
+    ],
     redirect: (context, state) {
       final authState = ref.read(authStatusProvider);
       final location = state.matchedLocation;
@@ -70,8 +74,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.splash,
         name: 'splash',
-        pageBuilder: (context, state) => const NoTransitionPage(
-          child: SplashScreen(),
+        pageBuilder: (context, state) => NoTransitionPage(
+          key: state.pageKey,
+          name: state.name,
+          child: const SplashScreen(),
         ),
       ),
 
@@ -80,8 +86,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.signIn,
         name: 'sign-in',
-        pageBuilder: (context, state) => const NoTransitionPage(
-          child: SignInScreen(),
+        pageBuilder: (context, state) => NoTransitionPage(
+          key: state.pageKey,
+          name: state.name,
+          child: const SignInScreen(),
         ),
       ),
 
@@ -90,8 +98,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.onboardingUsername,
         name: 'onboarding-username',
-        pageBuilder: (context, state) => const MaterialPage(
-          child: OnboardingUsernameScreen(),
+        pageBuilder: (context, state) => MaterialPage(
+          key: state.pageKey,
+          name: state.name,
+          child: const OnboardingUsernameScreen(),
         ),
       ),
 
@@ -100,8 +110,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.editProfile,
         name: 'edit-profile',
-        pageBuilder: (context, state) => const MaterialPage(
-          child: EditProfileScreen(),
+        pageBuilder: (context, state) => MaterialPage(
+          key: state.pageKey,
+          name: state.name,
+          child: const EditProfileScreen(),
         ),
       ),
 
@@ -113,6 +125,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) {
           final song = state.extra as Song?;
           return MaterialPage(
+            key: state.pageKey,
+            name: state.name,
             child: SelectedSongScreen(song: song),
           );
         },
@@ -185,6 +199,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'player',
         pageBuilder: (context, state) => CustomTransitionPage(
           key: state.pageKey,
+          name: state.name,
           child: const FullPlayerScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             final curvedAnimation = CurvedAnimation(
@@ -207,8 +222,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.createMoment,
         name: 'create-moment',
-        pageBuilder: (context, state) => const MaterialPage(
-          child: MomentCreatorScreen(),
+        pageBuilder: (context, state) => MaterialPage(
+          key: state.pageKey,
+          name: state.name,
+          child: const MomentCreatorScreen(),
         ),
       ),
 
@@ -220,6 +237,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) {
           final selection = state.extra as TrimSelection;
           return MaterialPage(
+            key: state.pageKey,
+            name: state.name,
             child: MomentReadyScreen(selection: selection),
           );
         },

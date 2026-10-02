@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:moments/core/router/app_routes.dart';
 import 'package:moments/core/theme/app_colors.dart';
 import 'package:moments/features/moments/domain/models/trim_selection.dart';
+import 'package:moments/features/player/presentation/providers/player_provider.dart';
 
 /// Confirmation screen displayed after a user captures and validates a Moment trim.
 ///
 /// In Phase 6, this serves as the validated preview stub. Real database persistence
 /// via Supabase is implemented in Phase 7.
-class MomentReadyScreen extends StatelessWidget {
+class MomentReadyScreen extends ConsumerWidget {
   const MomentReadyScreen({
     required this.selection,
     super.key,
@@ -17,7 +19,7 @@ class MomentReadyScreen extends StatelessWidget {
   final TrimSelection selection;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -278,6 +280,7 @@ class MomentReadyScreen extends StatelessWidget {
                   ),
                 ),
                 onPressed: () {
+                  ref.read(playerPlaybackStateProvider.notifier).setExpanded(false);
                   context.go(AppRoutes.moments);
                 },
                 child: const Text(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:moments/core/router/player_route_observer.dart';
 import 'package:moments/core/theme/app_colors.dart';
 import 'package:moments/core/widgets/moments_bottom_nav.dart';
 import 'package:moments/features/player/data/youtube_player_controller_impl.dart';
@@ -31,9 +32,23 @@ class PersistentPlayerHost extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final playerState = ref.watch(playerPlaybackStateProvider);
     final controller = ref.watch(playerControllerProvider);
+    final currentRoute = ref.watch(currentRouteNameProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final mediaQuery = MediaQuery.of(context);
     final screenWidth = mediaQuery.size.width;
+
+    // Route-driven state: player is expanded only on dedicated player routes
+    final isExpandedRoute = currentRoute == 'player' || currentRoute == 'create-moment';
+    final isShellRoute = currentRoute == null ||
+        currentRoute == 'shell' ||
+        currentRoute == 'search' ||
+        currentRoute == 'moments' ||
+        currentRoute == 'groups' ||
+        currentRoute == 'profile';
+
+    // Player frame is visible only when expanded or when docked in the shell's MiniPlayerBar
+    final shouldShowFrame = isExpandedRoute || isShellRoute;
+    final isExpanded = isExpandedRoute;
 
     // Only render the video player if a video has actually been loaded
     final hasActiveVideo = playerState.videoId != null && playerState.isVisible;
@@ -45,13 +60,11 @@ class PersistentPlayerHost extends ConsumerWidget {
     const miniWidth = 46.0;
     const miniHeight = 46.0;
 
-    // Compute geometry for full-player mode (anchored in top half of FullPlayerScreen)
-    final fullTop = mediaQuery.padding.top + 56.0 + 12.0; // AppBar height + spacing
+    // Compute geometry for full-player mode (anchored in top half of FullPlayerScreen / MomentCreatorScreen)
+    final fullTop = mediaQuery.padding.top + 56.0 + 8.0; // AppBar height + spacing
     const fullLeft = 20.0;
     final fullWidth = screenWidth - (fullLeft * 2);
     final fullHeight = fullWidth * (9.0 / 16.0);
-
-    final isExpanded = playerState.isExpanded;
 
     return Stack(
       children: [
@@ -63,14 +76,16 @@ class PersistentPlayerHost extends ConsumerWidget {
           AnimatedPositioned(
             duration: const Duration(milliseconds: 320),
             curve: Curves.easeInOutCubic,
-            top: isExpanded ? fullTop : null,
-            bottom: isExpanded ? null : miniBottom,
-            left: isExpanded ? fullLeft : miniLeft,
+            top: shouldShowFrame ? (isExpanded ? fullTop : null) : null,
+            bottom: shouldShowFrame ? (isExpanded ? null : miniBottom) : -200,
+            left: shouldShowFrame ? (isExpanded ? fullLeft : miniLeft) : -200,
             width: isExpanded ? fullWidth : miniWidth,
             height: isExpanded ? fullHeight : miniHeight,
-            child: IgnorePointer(
-              // Allow gestures on full player; pass gestures through to MiniPlayerBar in mini mode
-              ignoring: !isExpanded,
+            child: Opacity(
+              opacity: shouldShowFrame ? 1.0 : 0.0,
+              child: IgnorePointer(
+                // Allow gestures on full player; pass gestures through in mini mode or when hidden
+                ignoring: !isExpanded || !shouldShowFrame,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 320),
                 curve: Curves.easeInOutCubic,
@@ -101,6 +116,7 @@ class PersistentPlayerHost extends ConsumerWidget {
               ),
             ),
           ),
+        ),
       ],
     );
   }
