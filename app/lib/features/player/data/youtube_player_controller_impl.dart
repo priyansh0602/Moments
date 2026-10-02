@@ -202,6 +202,13 @@ class YoutubePlayerControllerImpl implements PlayerController {
   }) async {
     debugPrint('[PlayerController] Loading video $videoId ("$title" by "$artist")');
 
+    final isTrimmed = startSeconds != null && endSeconds != null;
+    if (isTrimmed) {
+      setPreviewRange(startSeconds: startSeconds, endSeconds: endSeconds, loop: true);
+    } else {
+      clearPreviewRange();
+    }
+
     _updateState(
       _state.copyWith(
         videoId: videoId,
@@ -209,9 +216,14 @@ class YoutubePlayerControllerImpl implements PlayerController {
         artist: artist ?? _state.artist,
         thumbnailUrl: thumbnailUrl ?? _state.thumbnailUrl,
         duration: duration ?? _state.duration,
-        position: Duration.zero,
+        position: startSeconds != null
+            ? Duration(milliseconds: (startSeconds * 1000).round())
+            : Duration.zero,
         status: PlaybackStatus.buffering,
         isVisible: true,
+        startSeconds: startSeconds,
+        endSeconds: endSeconds,
+        clearTrimRange: !isTrimmed,
       ),
     );
 

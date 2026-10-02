@@ -3,20 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:moments/core/router/app_routes.dart';
 import 'package:moments/core/theme/app_colors.dart';
-import 'package:moments/features/moments/domain/models/trim_selection.dart';
+import 'package:moments/features/moments/domain/models/moment.dart';
 import 'package:moments/features/player/presentation/providers/player_provider.dart';
 
-/// Confirmation screen displayed after a user captures and validates a Moment trim.
-///
-/// In Phase 6, this serves as the validated preview stub. Real database persistence
-/// via Supabase is implemented in Phase 7.
+/// Confirmation screen displayed after a user captures and persists a Moment to Supabase.
 class MomentReadyScreen extends ConsumerWidget {
   const MomentReadyScreen({
-    required this.selection,
+    required this.moment,
     super.key,
   });
 
-  final TrimSelection selection;
+  final Moment moment;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -34,7 +31,7 @@ class MomentReadyScreen extends ConsumerWidget {
           onPressed: () => context.pop(),
         ),
         title: Text(
-          'Moment Captured',
+          'Moment Saved',
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
           ),
@@ -81,7 +78,7 @@ class MomentReadyScreen extends ConsumerWidget {
 
               // 2. Congratulations heading
               Text(
-                'Moment Ready to Save!',
+                'Moment Saved to Library!',
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.5,
@@ -92,7 +89,7 @@ class MomentReadyScreen extends ConsumerWidget {
               const SizedBox(height: 8),
 
               Text(
-                'Your trimmed section has been validated and staged.',
+                'Your trimmed snippet has been securely stored in PostgreSQL.',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -132,9 +129,9 @@ class MomentReadyScreen extends ConsumerWidget {
                             width: 64,
                             height: 64,
                             color: Colors.black26,
-                            child: selection.thumbnailUrl.isNotEmpty
+                            child: moment.thumbnailUrl.isNotEmpty
                                 ? Image.network(
-                                    selection.thumbnailUrl,
+                                    moment.thumbnailUrl,
                                     fit: BoxFit.cover,
                                     errorBuilder: (context, error, stackTrace) => const Icon(
                                       Icons.music_note_rounded,
@@ -155,7 +152,7 @@ class MomentReadyScreen extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                selection.title,
+                                moment.title,
                                 style: theme.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -164,7 +161,7 @@ class MomentReadyScreen extends ConsumerWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                selection.artist,
+                                moment.artist.isNotEmpty ? moment.artist : 'Unknown Artist',
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: theme.colorScheme.onSurfaceVariant,
                                 ),
@@ -198,7 +195,7 @@ class MomentReadyScreen extends ConsumerWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '${selection.formattedStart} — ${selection.formattedEnd}',
+                              '${moment.formattedStart} — ${moment.formattedEnd}',
                               style: theme.textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.w800,
                                 fontFamily: 'monospace',
@@ -220,7 +217,7 @@ class MomentReadyScreen extends ConsumerWidget {
                             ),
                           ),
                           child: Text(
-                            selection.formattedClipDuration,
+                            moment.formattedClipDuration,
                             style: theme.textTheme.titleMedium?.copyWith(
                               color: AppColors.primary,
                               fontWeight: FontWeight.w800,
@@ -235,7 +232,7 @@ class MomentReadyScreen extends ConsumerWidget {
 
               const SizedBox(height: 24),
 
-              // 4. Phase Notice
+              // 4. Persistence Notice
               Container(
                 padding: const EdgeInsets.all(16.0),
                 decoration: BoxDecoration(
@@ -250,14 +247,14 @@ class MomentReadyScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Icon(
-                      Icons.info_outline_rounded,
+                      Icons.cloud_done_rounded,
                       size: 20,
                       color: AppColors.primary,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Phase 6 Prototype: Trimming engine complete. In Phase 7, saving will store this Moment reference in PostgreSQL via Supabase and add it to your library.',
+                        'Stored with ID: ${moment.id.substring(0, moment.id.length > 8 ? 8 : moment.id.length)}... You can now replay this trimmed Moment from "Your Moments" anytime.',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                           height: 1.4,
@@ -304,7 +301,7 @@ class MomentReadyScreen extends ConsumerWidget {
                 ),
                 onPressed: () => context.pop(),
                 child: const Text(
-                  'Adjust Trim',
+                  'Back to Editor',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,

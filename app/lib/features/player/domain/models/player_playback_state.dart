@@ -35,6 +35,8 @@ class PlayerPlaybackState extends Equatable {
     this.isVisible = false,
     this.isExpanded = false,
     this.errorMessage,
+    this.startSeconds,
+    this.endSeconds,
   });
 
   /// The active YouTube video identifier.
@@ -48,6 +50,15 @@ class PlayerPlaybackState extends Equatable {
 
   /// High-resolution thumbnail image URL.
   final String? thumbnailUrl;
+
+  /// Optional start boundary if playing a trimmed Moment.
+  final double? startSeconds;
+
+  /// Optional end boundary if playing a trimmed Moment.
+  final double? endSeconds;
+
+  /// Whether the currently playing item is a trimmed Moment rather than a full track.
+  bool get isMoment => startSeconds != null && endSeconds != null;
 
   /// Current playback status (playing, paused, buffering, etc.).
   final PlaybackStatus status;
@@ -109,6 +120,9 @@ class PlayerPlaybackState extends Equatable {
     bool? isVisible,
     bool? isExpanded,
     String? errorMessage,
+    double? startSeconds,
+    double? endSeconds,
+    bool clearTrimRange = false,
   }) {
     return PlayerPlaybackState(
       videoId: videoId ?? this.videoId,
@@ -122,6 +136,8 @@ class PlayerPlaybackState extends Equatable {
       isVisible: isVisible ?? this.isVisible,
       isExpanded: isExpanded ?? this.isExpanded,
       errorMessage: errorMessage ?? this.errorMessage,
+      startSeconds: clearTrimRange ? null : (startSeconds ?? this.startSeconds),
+      endSeconds: clearTrimRange ? null : (endSeconds ?? this.endSeconds),
     );
   }
 
@@ -138,5 +154,7 @@ class PlayerPlaybackState extends Equatable {
         isVisible,
         isExpanded,
         errorMessage,
+        startSeconds,
+        endSeconds,
       ];
 }

@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:moments/core/router/app_routes.dart';
 import 'package:moments/core/theme/app_colors.dart';
 import 'package:moments/core/widgets/moment_range_slider.dart';
+import 'package:moments/features/moments/data/moments_repository.dart';
+import 'package:moments/features/moments/domain/models/trim_selection.dart';
+import 'package:moments/features/moments/presentation/providers/my_moments_provider.dart';
 import 'package:moments/features/moments/presentation/providers/trim_selection_provider.dart';
 import 'package:moments/features/player/presentation/providers/player_provider.dart';
 
@@ -25,6 +28,52 @@ class MomentCreatorScreen extends ConsumerStatefulWidget {
 
 class _MomentCreatorScreenState extends ConsumerState<MomentCreatorScreen> {
   late TrimSelectionNotifier _trimNotifier;
+  bool _isSaving = false;
+  String? _saveErrorMessage;
+
+  Future<void> _saveMoment(TrimSelection trimState) async {
+    setState(() {
+      _isSaving = true;
+      _saveErrorMessage = null;
+    });
+
+    _trimNotifier.stopPreview();
+
+    try {
+      final repository = ref.read(momentsRepositoryProvider);
+      final moment = await repository.createMoment(
+        videoId: trimState.videoId,
+        title: trimState.title,
+        artist: trimState.artist,
+        thumbnailUrl: trimState.thumbnailUrl,
+        startSeconds: trimState.startSeconds,
+        endSeconds: trimState.endSeconds,
+      );
+
+      // Prepend to user library so it's immediately present
+      ref.read(myMomentsProvider.notifier).insertMoment(moment);
+
+      if (!mounted) return;
+
+      setState(() {
+        _isSaving = false;
+      });
+
+      // Navigate to confirmation screen passing the real persisted Moment
+      context.push(
+        AppRoutes.momentReady,
+        extra: moment,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isSaving = false;
+        _saveErrorMessage = e is MomentsRepositoryException
+            ? e.message
+            : 'Failed to save Moment: $e';
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -460,6 +509,48 @@ class _MomentCreatorScreenState extends ConsumerState<MomentCreatorScreen> {
 
                 const SizedBox(height: 12),
 
+                // Inline Save Error Banner
+                if (_saveErrorMessage != null) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withAlpha(25),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.error.withAlpha(100)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.error_outline_rounded,
+                          color: AppColors.error,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _saveErrorMessage!,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppColors.error,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 16, color: AppColors.error),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () {
+                            setState(() {
+                              _saveErrorMessage = null;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
                 // 9. Save Moment Primary CTA
                 FilledButton(
                   style: FilledButton.styleFrom(
@@ -470,35 +561,26 @@ class _MomentCreatorScreenState extends ConsumerState<MomentCreatorScreen> {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  onPressed: isValid
-                      ? () {
-                          // Log trimmed range per Phase 6 requirements
-                          debugPrint(
-                            '[MomentCreator] Final Trim: videoId=${trimState.videoId}, '
-                            'start=${trimState.startSeconds}s, '
-                            'end=${trimState.endSeconds}s, '
-                            'duration=${trimState.clipDurationSeconds}s, '
-                            'title="${trimState.title}"',
-                          );
-
-                          // Halt preview loop before navigating
-                          trimNotifier.stopPreview();
-
-                          // Navigate to stub confirmation screen
-                          context.push(
-                            AppRoutes.momentReady,
-                            extra: trimState,
-                          );
-                        }
+                  onPressed: (isValid && !_isSaving)
+                      ? () => _saveMoment(trimState)
                       : null,
-                  child: Text(
-                    'Save Moment (${trimState.formattedClipDuration})',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: isValid ? Colors.white : (isDark ? Colors.white38 : Colors.black38),
-                    ),
-                  ),
+                  child: _isSaving
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Text(
+                          'Save Moment (${trimState.formattedClipDuration})',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: isValid ? Colors.white : (isDark ? Colors.white38 : Colors.black38),
+                          ),
+                        ),
                 ),
 
                 const SizedBox(height: 24),

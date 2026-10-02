@@ -33,6 +33,13 @@ class FakePlayerController implements PlayerController {
     String? thumbnailUrl,
     Duration? duration,
   }) async {
+    final isTrimmed = startSeconds != null && endSeconds != null;
+    if (isTrimmed) {
+      setPreviewRange(startSeconds: startSeconds, endSeconds: endSeconds, loop: true);
+    } else {
+      clearPreviewRange();
+    }
+
     _emit(
       _state.copyWith(
         videoId: videoId,
@@ -43,6 +50,9 @@ class FakePlayerController implements PlayerController {
         position: Duration(seconds: startSeconds?.round() ?? 0),
         status: PlaybackStatus.playing,
         isVisible: true,
+        startSeconds: startSeconds,
+        endSeconds: endSeconds,
+        clearTrimRange: !isTrimmed,
       ),
     );
   }

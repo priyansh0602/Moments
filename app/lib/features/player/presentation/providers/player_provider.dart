@@ -6,6 +6,7 @@ import 'package:moments/features/player/data/fake_player_controller.dart';
 import 'package:moments/features/player/data/youtube_player_controller_impl.dart';
 import 'package:moments/features/player/domain/models/player_playback_state.dart';
 import 'package:moments/features/player/domain/player_controller.dart';
+import 'package:moments/features/moments/domain/models/moment.dart';
 import 'package:moments/features/search/domain/models/song.dart';
 /// Provider exposing the singleton [PlayerController] for the application.
 ///
@@ -63,6 +64,19 @@ class PlayerPlaybackNotifier extends Notifier<PlayerPlaybackState> {
       artist: song.artist,
       thumbnailUrl: song.thumbnailUrl,
       duration: duration,
+    );
+  }
+
+  /// Loads and starts playing a trimmed [Moment].
+  Future<void> playMoment(Moment moment) async {
+    final controller = ref.read(playerControllerProvider);
+    await controller.loadVideo(
+      moment.videoId,
+      startSeconds: moment.startSeconds,
+      endSeconds: moment.endSeconds,
+      title: moment.title,
+      artist: moment.artist,
+      thumbnailUrl: moment.thumbnailUrl,
     );
   }
 

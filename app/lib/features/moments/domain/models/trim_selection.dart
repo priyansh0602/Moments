@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:moments/core/utils/time_formatter.dart';
 
 part 'trim_selection.freezed.dart';
 part 'trim_selection.g.dart';
@@ -43,22 +44,16 @@ abstract class TrimSelection with _$TrimSelection {
       (endSeconds - startSeconds).clamp(0.0, totalDurationSeconds);
 
   /// Formatted start timestamp string (e.g. "01:24").
-  String get formattedStart => formatSeconds(startSeconds);
+  String get formattedStart => TimeFormatter.formatSeconds(startSeconds);
 
   /// Formatted end timestamp string (e.g. "01:52").
-  String get formattedEnd => formatSeconds(endSeconds);
+  String get formattedEnd => TimeFormatter.formatSeconds(endSeconds);
 
   /// Formatted total song duration string (e.g. "03:45").
-  String get formattedTotalDuration => formatSeconds(totalDurationSeconds);
+  String get formattedTotalDuration => TimeFormatter.formatSeconds(totalDurationSeconds);
 
   /// Formatted duration string for the clip (e.g. "28s" or "28.5s").
-  String get formattedClipDuration {
-    final secs = clipDurationSeconds;
-    if (secs == secs.roundToDouble()) {
-      return '${secs.toInt()}s';
-    }
-    return '${secs.toStringAsFixed(1)}s';
-  }
+  String get formattedClipDuration => TimeFormatter.formatClipDuration(clipDurationSeconds);
 
   /// Whether the current trim range satisfies all validation constraints.
   bool get isValid =>
@@ -77,15 +72,7 @@ abstract class TrimSelection with _$TrimSelection {
   );
 
   /// Helper to format seconds as `MM:SS`.
-  static String formatSeconds(double totalSecs) {
-    if (totalSecs.isNaN || totalSecs.isInfinite || totalSecs < 0) {
-      return '00:00';
-    }
-    final int rounded = totalSecs.round();
-    final int minutes = rounded ~/ 60;
-    final int seconds = rounded % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-  }
+  static String formatSeconds(double totalSecs) => TimeFormatter.formatSeconds(totalSecs);
 }
 
 /// Pure validation function verifying start and end boundaries for a Moment clip.

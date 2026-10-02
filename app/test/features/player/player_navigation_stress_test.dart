@@ -6,6 +6,8 @@ import 'package:moments/core/router/player_route_observer.dart';
 import 'package:moments/core/widgets/moments_bottom_nav.dart';
 import 'package:moments/features/auth/presentation/providers/auth_status_provider.dart';
 import 'package:moments/features/groups/presentation/groups_screen.dart';
+import 'package:moments/features/moments/data/moments_repository.dart';
+import 'package:moments/features/moments/domain/models/moment.dart';
 import 'package:moments/features/moments/presentation/moment_creator_screen.dart';
 import 'package:moments/features/moments/presentation/moment_ready_screen.dart';
 import 'package:moments/features/moments/presentation/your_moments_screen.dart';
@@ -42,6 +44,40 @@ class _TestPlayerController extends FakePlayerController {
   }
 }
 
+class _FakeMomentsRepository implements MomentsRepository {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+
+  @override
+  Future<Moment> createMoment({
+    required String videoId,
+    required String title,
+    required String artist,
+    required String thumbnailUrl,
+    required double startSeconds,
+    required double endSeconds,
+    bool isPublic = true,
+  }) async {
+    return Moment(
+      id: 'test-saved-id-1',
+      userId: 'test-user-id',
+      videoId: videoId,
+      title: title,
+      artist: artist,
+      thumbnailUrl: thumbnailUrl,
+      startSeconds: startSeconds,
+      endSeconds: endSeconds,
+      isPublic: isPublic,
+      createdAt: DateTime.now(),
+    );
+  }
+
+  @override
+  Future<List<Moment>> getMyMoments({int limit = 20, int offset = 0}) async {
+    return const [];
+  }
+}
+
 ProviderContainer _createTestContainer(FakePlayerController playerCtrl) {
   return ProviderContainer(
     overrides: [
@@ -56,6 +92,7 @@ ProviderContainer _createTestContainer(FakePlayerController playerCtrl) {
         _FakeProfileNotifier.new,
       ),
       playerControllerProvider.overrideWithValue(playerCtrl),
+      momentsRepositoryProvider.overrideWithValue(_FakeMomentsRepository()),
     ],
   );
 }

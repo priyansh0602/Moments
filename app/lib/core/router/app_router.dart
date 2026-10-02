@@ -9,7 +9,7 @@ import 'package:moments/features/auth/presentation/providers/auth_status_provide
 import 'package:moments/features/auth/presentation/sign_in_screen.dart';
 import 'package:moments/features/auth/presentation/splash_screen.dart';
 import 'package:moments/features/groups/presentation/groups_screen.dart';
-import 'package:moments/features/moments/domain/models/trim_selection.dart';
+import 'package:moments/features/moments/domain/models/moment.dart';
 import 'package:moments/features/moments/presentation/moment_creator_screen.dart';
 import 'package:moments/features/moments/presentation/moment_ready_screen.dart';
 import 'package:moments/features/moments/presentation/your_moments_screen.dart';
@@ -229,17 +229,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
-      // Moment Ready Confirmation Screen (Phase 6)
+      // Moment Ready Confirmation Screen (Phase 7)
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.momentReady,
         name: 'moment-ready',
         pageBuilder: (context, state) {
-          final selection = state.extra as TrimSelection;
+          final moment = state.extra as Moment;
           return MaterialPage(
             key: state.pageKey,
             name: state.name,
-            child: MomentReadyScreen(selection: selection),
+            child: MomentReadyScreen(moment: moment),
           );
         },
       ),

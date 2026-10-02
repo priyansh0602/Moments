@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moments/app.dart';
-import 'package:moments/core/widgets/empty_state.dart';
 import 'package:moments/core/widgets/loading_indicator.dart';
 import 'package:moments/core/widgets/moments_bottom_nav.dart';
 import 'package:moments/core/widgets/secondary_button.dart';
@@ -13,6 +12,8 @@ import 'package:moments/features/auth/presentation/onboarding_username_screen.da
 import 'package:moments/features/auth/presentation/providers/auth_status_provider.dart';
 import 'package:moments/features/auth/presentation/sign_in_screen.dart';
 import 'package:moments/features/groups/presentation/groups_screen.dart';
+import 'package:moments/features/moments/domain/models/moment.dart';
+import 'package:moments/features/moments/presentation/providers/my_moments_provider.dart';
 import 'package:moments/features/moments/presentation/your_moments_screen.dart';
 import 'package:moments/features/player/data/fake_player_controller.dart';
 import 'package:moments/features/player/presentation/full_player_screen.dart';
@@ -55,6 +56,27 @@ class _TestPlayerController extends FakePlayerController {
   }
 }
 
+class _FakeMyMomentsNotifier extends MyMomentsNotifier {
+  @override
+  MyMomentsState build() {
+    return const MyMomentsState(
+      status: MyMomentsStatus.success,
+      moments: [
+        Moment(
+          id: 'test-m-1',
+          userId: 'test-user-id',
+          videoId: 'v-1',
+          title: 'After Dark (Drop)',
+          artist: 'Mr.Kitty',
+          thumbnailUrl: '',
+          startSeconds: 62.0,
+          endSeconds: 88.0,
+        ),
+      ],
+    );
+  }
+}
+
 Widget _buildAuthenticatedApp() {
   return ProviderScope(
     overrides: [
@@ -70,6 +92,9 @@ Widget _buildAuthenticatedApp() {
       ),
       playerControllerProvider.overrideWith(
         (ref) => _TestPlayerController(),
+      ),
+      myMomentsProvider.overrideWith(
+        _FakeMyMomentsNotifier.new,
       ),
     ],
     child: const MomentsApp(),
@@ -288,13 +313,6 @@ void main() {
       expect(find.byType(YourMomentsScreen), findsOneWidget);
       expect(find.text('After Dark (Drop)'), findsOneWidget);
 
-      // Toggle Empty State in Moments tab to test state preservation
-      final emptyToggleFinder = find.byTooltip('Preview Empty State');
-      expect(emptyToggleFinder, findsOneWidget);
-      await tester.tap(emptyToggleFinder);
-      await tester.pumpAndSettle();
-      expect(find.byType(EmptyState), findsOneWidget);
-
       // 3. Switch to Groups tab via bottom nav
       final groupsTab = find.descendant(
         of: find.byType(MomentsBottomNav),
@@ -320,7 +338,7 @@ void main() {
       await tester.tap(momentsTab);
       await tester.pumpAndSettle();
       expect(find.byType(YourMomentsScreen), findsOneWidget);
-      expect(find.byType(EmptyState), findsOneWidget);
+      expect(find.text('After Dark (Drop)'), findsOneWidget);
     });
 
     testWidgets('Tapping mini-player bar navigates to full player and back', (

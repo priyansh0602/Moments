@@ -10,6 +10,7 @@ class MomentCard extends StatelessWidget {
     super.key,
     this.onTap,
     this.onMenuTap,
+    this.onDelete,
   });
 
   /// The moment entity to display.
@@ -21,16 +22,13 @@ class MomentCard extends StatelessWidget {
   /// Callback when the trailing options menu is tapped.
   final VoidCallback? onMenuTap;
 
-  String _formatTime(double totalSeconds) {
-    final minutes = totalSeconds ~/ 60;
-    final seconds = (totalSeconds % 60).toInt();
-    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-  }
+  /// Callback when the delete option is triggered.
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final rangeText = '${_formatTime(moment.startSeconds)}–${_formatTime(moment.endSeconds)}';
+    final rangeText = moment.formattedTimeRange;
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -40,7 +38,7 @@ class MomentCard extends StatelessWidget {
           padding: const EdgeInsets.all(12.0),
           child: Row(
             children: [
-              // Thumbnail with snippet pulse badge
+              // Thumbnail with snippet play badge
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: SizedBox(
@@ -49,21 +47,45 @@ class MomentCard extends StatelessWidget {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              AppColors.primary.withAlpha(220),
-                              AppColors.accent.withAlpha(200),
-                            ],
-                            begin: Alignment.bottomLeft,
-                            end: Alignment.topRight,
+                      if (moment.thumbnailUrl.isNotEmpty)
+                        Image.network(
+                          moment.thumbnailUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            color: Colors.black26,
+                            child: const Icon(
+                              Icons.music_note_rounded,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        )
+                      else
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.primary.withAlpha(220),
+                                AppColors.accent.withAlpha(200),
+                              ],
+                              begin: Alignment.bottomLeft,
+                              end: Alignment.topRight,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.play_arrow_rounded,
+                            color: Colors.white,
+                            size: 32,
                           ),
                         ),
-                        child: const Icon(
-                          Icons.play_arrow_rounded,
-                          color: Colors.white,
-                          size: 32,
+                      // Subtle playback hint overlay
+                      Container(
+                        color: Colors.black.withAlpha(50),
+                        child: const Center(
+                          child: Icon(
+                            Icons.play_arrow_rounded,
+                            color: Colors.white,
+                            size: 26,
+                          ),
                         ),
                       ),
                     ],
@@ -87,7 +109,7 @@ class MomentCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      moment.artist,
+                      moment.artist.isNotEmpty ? moment.artist : 'Unknown Artist',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -142,19 +164,56 @@ class MomentCard extends StatelessWidget {
               ),
 
               // Trailing action menu
-              IconButton(
-                icon: const Icon(Icons.more_vert_rounded, size: 20),
-                color: theme.colorScheme.onSurfaceVariant,
-                onPressed: onMenuTap ??
-                    () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Options for "${moment.title}"'),
-                          duration: const Duration(seconds: 1),
-                        ),
-                      );
-                    },
-              ),
+              if (onMenuTap != null)
+                IconButton(
+                  icon: const Icon(Icons.more_vert_rounded, size: 20),
+                  color: theme.colorScheme.onSurfaceVariant,
+                  onPressed: onMenuTap,
+                )
+              else if (onDelete != null)
+                PopupMenuButton<String>(
+                  icon: Icon(
+                    Icons.more_vert_rounded,
+                    size: 20,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  onSelected: (value) {
+                    if (value == 'delete') {
+                      onDelete?.call();
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_outline_rounded, color: AppColors.error, size: 20),
+                          SizedBox(width: 10),
+                          Text(
+                            'Delete Moment',
+                            style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                )
+              else
+                IconButton(
+                  icon: const Icon(Icons.more_vert_rounded, size: 20),
+                  color: theme.colorScheme.onSurfaceVariant,
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Options for "${moment.title}"'),
+                        duration: const Duration(seconds: 1),
+                      ),
+                    );
+                  },
+                ),
             ],
           ),
         ),
