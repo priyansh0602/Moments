@@ -11,7 +11,9 @@ import 'package:moments/features/auth/presentation/controllers/auth_controller.d
 import 'package:moments/features/auth/presentation/onboarding_username_screen.dart';
 import 'package:moments/features/auth/presentation/providers/auth_status_provider.dart';
 import 'package:moments/features/auth/presentation/sign_in_screen.dart';
+import 'package:moments/features/groups/domain/models/moment_group.dart';
 import 'package:moments/features/groups/presentation/groups_screen.dart';
+import 'package:moments/features/groups/presentation/providers/my_groups_provider.dart';
 import 'package:moments/features/moments/domain/models/moment.dart';
 import 'package:moments/features/moments/presentation/providers/my_moments_provider.dart';
 import 'package:moments/features/moments/presentation/your_moments_screen.dart';
@@ -77,6 +79,25 @@ class _FakeMyMomentsNotifier extends MyMomentsNotifier {
   }
 }
 
+class _FakeMyGroupsNotifier extends MyGroupsNotifier {
+  @override
+  MyGroupsState build() {
+    return MyGroupsState(
+      status: MyGroupsStatus.success,
+      groups: [
+        MomentGroup(
+          id: 'test-g-1',
+          userId: 'test-user-id',
+          name: 'Late Night Drives',
+          description: 'Atmospheric synthwave and mellow night hooks',
+          createdAt: DateTime.now(),
+          momentCount: 14,
+        ),
+      ],
+    );
+  }
+}
+
 Widget _buildAuthenticatedApp() {
   return ProviderScope(
     overrides: [
@@ -95,6 +116,9 @@ Widget _buildAuthenticatedApp() {
       ),
       myMomentsProvider.overrideWith(
         _FakeMyMomentsNotifier.new,
+      ),
+      myGroupsProvider.overrideWith(
+        _FakeMyGroupsNotifier.new,
       ),
     ],
     child: const MomentsApp(),

@@ -6,6 +6,7 @@ import 'package:moments/core/theme/app_colors.dart';
 import 'package:moments/core/widgets/empty_state.dart';
 import 'package:moments/core/widgets/loading_indicator.dart';
 import 'package:moments/core/widgets/moment_card.dart';
+import 'package:moments/features/groups/presentation/widgets/add_to_group_sheet.dart';
 import 'package:moments/features/moments/domain/models/moment.dart';
 import 'package:moments/features/moments/presentation/providers/my_moments_provider.dart';
 import 'package:moments/features/player/presentation/providers/player_provider.dart';
@@ -224,6 +225,7 @@ class _YourMomentsScreenState extends ConsumerState<YourMomentsScreen> {
                   ),
                 );
               },
+              onAddToGroup: () => AddToGroupSheet.show(context, moment),
               onDelete: () => _confirmDelete(moment),
             ),
           );

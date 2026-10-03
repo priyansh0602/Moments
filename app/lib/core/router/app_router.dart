@@ -8,6 +8,8 @@ import 'package:moments/features/auth/presentation/onboarding_username_screen.da
 import 'package:moments/features/auth/presentation/providers/auth_status_provider.dart';
 import 'package:moments/features/auth/presentation/sign_in_screen.dart';
 import 'package:moments/features/auth/presentation/splash_screen.dart';
+import 'package:moments/features/groups/domain/models/moment_group.dart';
+import 'package:moments/features/groups/presentation/group_detail_screen.dart';
 import 'package:moments/features/groups/presentation/groups_screen.dart';
 import 'package:moments/features/moments/domain/models/moment.dart';
 import 'package:moments/features/moments/presentation/moment_creator_screen.dart';
@@ -173,6 +175,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 pageBuilder: (context, state) => const NoTransitionPage(
                   child: GroupsScreen(),
                 ),
+                routes: [
+                  GoRoute(
+                    path: 'detail',
+                    name: 'group-detail',
+                    pageBuilder: (context, state) {
+                      final group = state.extra as MomentGroup;
+                      return MaterialPage(
+                        key: state.pageKey,
+                        name: state.name,
+                        child: GroupDetailScreen(group: group),
+                      );
+                    },
+                  ),
+                ],
               ),
             ],
           ),

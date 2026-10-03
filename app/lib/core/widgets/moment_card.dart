@@ -10,6 +10,7 @@ class MomentCard extends StatelessWidget {
     super.key,
     this.onTap,
     this.onMenuTap,
+    this.onAddToGroup,
     this.onDelete,
   });
 
@@ -21,6 +22,9 @@ class MomentCard extends StatelessWidget {
 
   /// Callback when the trailing options menu is tapped.
   final VoidCallback? onMenuTap;
+
+  /// Callback when the add to group option is triggered.
+  final VoidCallback? onAddToGroup;
 
   /// Callback when the delete option is triggered.
   final VoidCallback? onDelete;
@@ -170,7 +174,7 @@ class MomentCard extends StatelessWidget {
                   color: theme.colorScheme.onSurfaceVariant,
                   onPressed: onMenuTap,
                 )
-              else if (onDelete != null)
+              else if (onAddToGroup != null || onDelete != null)
                 PopupMenuButton<String>(
                   icon: Icon(
                     Icons.more_vert_rounded,
@@ -181,24 +185,45 @@ class MomentCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   onSelected: (value) {
-                    if (value == 'delete') {
+                    if (value == 'add_to_group') {
+                      onAddToGroup?.call();
+                    } else if (value == 'delete') {
                       onDelete?.call();
                     }
                   },
                   itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Row(
-                        children: [
-                          Icon(Icons.delete_outline_rounded, color: AppColors.error, size: 20),
-                          SizedBox(width: 10),
-                          Text(
-                            'Delete Moment',
-                            style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600),
-                          ),
-                        ],
+                    if (onAddToGroup != null)
+                      const PopupMenuItem(
+                        value: 'add_to_group',
+                        child: Row(
+                          children: [
+                            Icon(Icons.playlist_add_rounded,
+                                color: AppColors.primary, size: 20),
+                            SizedBox(width: 10),
+                            Text(
+                              'Add to Group',
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                    if (onDelete != null)
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_outline_rounded,
+                                color: AppColors.error, size: 20),
+                            SizedBox(width: 10),
+                            Text(
+                              'Delete Moment',
+                              style: TextStyle(
+                                  color: AppColors.error,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 )
               else

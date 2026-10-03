@@ -13,6 +13,7 @@ abstract class AppRoutes {
   static const String search = '/search';
   static const String moments = '/moments';
   static const String groups = '/groups';
+  static const String groupDetail = '/groups/detail';
   static const String profile = '/profile';
 
   /// Profile editing screen.

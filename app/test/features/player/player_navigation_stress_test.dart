@@ -5,6 +5,8 @@ import 'package:moments/app.dart';
 import 'package:moments/core/router/player_route_observer.dart';
 import 'package:moments/core/widgets/moments_bottom_nav.dart';
 import 'package:moments/features/auth/presentation/providers/auth_status_provider.dart';
+import 'package:moments/features/groups/data/groups_repository.dart';
+import 'package:moments/features/groups/domain/models/moment_group.dart';
 import 'package:moments/features/groups/presentation/groups_screen.dart';
 import 'package:moments/features/moments/data/moments_repository.dart';
 import 'package:moments/features/moments/domain/models/moment.dart';
@@ -78,6 +80,11 @@ class _FakeMomentsRepository implements MomentsRepository {
   }
 }
 
+class _FakeGroupsRepository extends Fake implements GroupsRepository {
+  @override
+  Future<List<MomentGroup>> getMyGroups() async => [];
+}
+
 ProviderContainer _createTestContainer(FakePlayerController playerCtrl) {
   return ProviderContainer(
     overrides: [
@@ -93,6 +100,7 @@ ProviderContainer _createTestContainer(FakePlayerController playerCtrl) {
       ),
       playerControllerProvider.overrideWithValue(playerCtrl),
       momentsRepositoryProvider.overrideWithValue(_FakeMomentsRepository()),
+      groupsRepositoryProvider.overrideWithValue(_FakeGroupsRepository()),
     ],
   );
 }

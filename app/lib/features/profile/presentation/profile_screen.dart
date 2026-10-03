@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:moments/core/router/app_routes.dart';
 import 'package:moments/core/theme/app_colors.dart';
 import 'package:moments/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:moments/features/groups/presentation/providers/my_groups_provider.dart';
 import 'package:moments/features/profile/presentation/providers/profile_provider.dart';
 
 /// Screen displaying user identity, snippet stats, and profile links.
@@ -18,6 +19,8 @@ class ProfileScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final profileAsync = ref.watch(currentUserProfileProvider);
     final profile = profileAsync.value;
+    final groupsState = ref.watch(myGroupsProvider);
+    final groupsCount = groupsState.groups.length.toString();
 
     final displayName = profile?.displayName?.isNotEmpty == true
         ? profile!.displayName!
@@ -145,12 +148,12 @@ class ProfileScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
 
-            // Stat Cards Row with real momentsCount from Supabase
+            // Stat Cards Row with real momentsCount and groupsCount from Supabase
             Row(
               children: [
                 _buildStatCard(context, momentsCount, 'Moments'),
                 const SizedBox(width: 10),
-                _buildStatCard(context, '0', 'Groups'),
+                _buildStatCard(context, groupsCount, 'Groups'),
                 const SizedBox(width: 10),
                 _buildStatCard(context, '0', 'Plays'),
               ],
@@ -181,7 +184,7 @@ class ProfileScreen extends ConsumerWidget {
                     context,
                     icon: Icons.folder_special_outlined,
                     title: 'Your Groups',
-                    subtitle: 'Curated playlists and snippet groups',
+                    subtitle: '$groupsCount curated collections',
                     onTap: () => context.go(AppRoutes.groups),
                   ),
                   const Divider(),
