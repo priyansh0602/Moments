@@ -257,56 +257,62 @@ class _AddToGroupSheetState extends ConsumerState<AddToGroupSheet> {
 
     showDialog<void>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Create New Group'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Group Name',
-                hintText: 'e.g. Late Night, Gym Hype',
+      builder: (dialogContext) {
+        Future<void> submit() async {
+          final name = nameController.text.trim();
+          if (name.isEmpty) return;
+
+          Navigator.of(dialogContext).pop();
+          final created = await ref
+              .read(myGroupsProvider.notifier)
+              .createGroup(
+                name: name,
+                description: descController.text.trim(),
+              );
+
+          if (created != null && mounted) {
+            // Add the moment to the newly created group directly
+            await _addToGroup(created);
+          }
+        }
+
+        return AlertDialog(
+          title: const Text('Create New Group'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Group Name',
+                  hintText: 'e.g. Late Night, Gym Hype',
+                ),
+                autofocus: true,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => submit(),
               ),
-              autofocus: true,
+              const SizedBox(height: 12),
+              TextField(
+                controller: descController,
+                decoration: const InputDecoration(
+                  labelText: 'Description (Optional)',
+                ),
+                maxLines: 2,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: descController,
-              decoration: const InputDecoration(
-                labelText: 'Description (Optional)',
-              ),
-              maxLines: 2,
+            FilledButton(
+              onPressed: submit,
+              child: const Text('Create & Add'),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final name = nameController.text.trim();
-              if (name.isEmpty) return;
-
-              Navigator.of(dialogContext).pop();
-              final created = await ref
-                  .read(myGroupsProvider.notifier)
-                  .createGroup(
-                    name: name,
-                    description: descController.text.trim(),
-                  );
-
-              if (created != null && mounted) {
-                // Add the moment to the newly created group directly
-                await _addToGroup(created);
-              }
-            },
-            child: const Text('Create & Add'),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
