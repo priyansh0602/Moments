@@ -30,6 +30,16 @@ class GroupDetailScreen extends ConsumerStatefulWidget {
 
 class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
   @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      ref
+          .read(groupItemsProvider(widget.group.id).notifier)
+          .loadItems(isRefresh: true);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final myGroupsState = ref.watch(myGroupsProvider);
 
@@ -265,22 +275,28 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
     MomentGroup currentGroup,
     List<GroupItem> items,
   ) {
-    return ReorderableListView.builder(
-      padding: const EdgeInsets.fromLTRB(16.0, 12.0, 16.0, 80.0),
-      itemCount: items.length,
-      onReorder: (oldIndex, newIndex) {
-        ref
-            .read(groupItemsProvider(currentGroup.id).notifier)
-            .reorder(oldIndex, newIndex);
-      },
-      itemBuilder: (context, index) {
-        final item = items[index];
-        return Padding(
-          key: ValueKey(item.id),
-          padding: const EdgeInsets.only(bottom: 12.0),
-          child: _buildGroupItemCard(context, currentGroup, item, index),
-        );
-      },
+    return RefreshIndicator(
+      onRefresh: () => ref
+          .read(groupItemsProvider(currentGroup.id).notifier)
+          .loadItems(isRefresh: true),
+      color: AppColors.primary,
+      child: ReorderableListView.builder(
+        padding: const EdgeInsets.fromLTRB(16.0, 12.0, 16.0, 80.0),
+        itemCount: items.length,
+        onReorder: (oldIndex, newIndex) {
+          ref
+              .read(groupItemsProvider(currentGroup.id).notifier)
+              .reorder(oldIndex, newIndex);
+        },
+        itemBuilder: (context, index) {
+          final item = items[index];
+          return Padding(
+            key: ValueKey(item.id),
+            padding: const EdgeInsets.only(bottom: 12.0),
+            child: _buildGroupItemCard(context, currentGroup, item, index),
+          );
+        },
+      ),
     );
   }
 
